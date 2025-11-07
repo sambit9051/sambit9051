@@ -224,6 +224,86 @@
         </div>
         <div class="btns"><button class="primary" id="btnRun2"><i class="fa-solid fa-play"></i> Run checks</button></div>
       </div>
+
+      <div class="card">
+        <div class="title"><i class="fa-solid fa-water"></i> Tank/Vessel Parameters</div>
+        <div class="grid3">
+          <div>
+            <label>Tank Height H (m)</label>
+            <input id="tankH" type="number" value="10" min="1" step="0.5" />
+          </div>
+          <div>
+            <label>Tank Diameter D<sub>t</sub> (m)</label>
+            <input id="tankD" type="number" value="8" min="1" step="0.5" />
+          </div>
+          <div>
+            <label>Liquid Density ρ (kg/m³)</label>
+            <input id="rho" type="number" value="1000" min="500" step="50" />
+          </div>
+        </div>
+        <div class="grid3" style="margin-top:.6rem">
+          <div>
+            <label>Static Load Factor</label>
+            <input id="factorStatic" type="number" value="1.0" min="0.5" max="2" step="0.1" />
+          </div>
+          <div>
+            <label>Filling Load Factor</label>
+            <input id="factorFilling" type="number" value="1.25" min="1" max="2" step="0.05" />
+          </div>
+          <div>
+            <label>Emptying Load Factor</label>
+            <input id="factorEmptying" type="number" value="1.15" min="1" max="2" step="0.05" />
+          </div>
+        </div>
+        <div class="info-box">
+          <small><i class="fa-solid fa-info-circle"></i> Dynamic factors account for surge, sloshing, and flow effects</small>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title"><i class="fa-solid fa-grip-lines-vertical"></i> Stiffener Configuration</div>
+        <label style="color:var(--accent2);margin-top:.4rem">Vertical Stiffeners</label>
+        <div class="grid4">
+          <div>
+            <label>Count n<sub>v</sub></label>
+            <input id="nVert" type="number" value="4" min="0" step="1" />
+          </div>
+          <div>
+            <label>Height h<sub>v</sub> (mm)</label>
+            <input id="hVert" type="number" value="100" min="20" step="5" />
+          </div>
+          <div>
+            <label>Width b<sub>v</sub> (mm)</label>
+            <input id="bVert" type="number" value="80" min="20" step="5" />
+          </div>
+          <div>
+            <label>Thickness t<sub>v</sub> (mm)</label>
+            <input id="tVert" type="number" value="8" min="3" step="1" />
+          </div>
+        </div>
+        <label style="color:var(--accent2);margin-top:.8rem">Horizontal Stiffeners</label>
+        <div class="grid4">
+          <div>
+            <label>Count n<sub>h</sub></label>
+            <input id="nHorz" type="number" value="2" min="0" step="1" />
+          </div>
+          <div>
+            <label>Height h<sub>h</sub> (mm)</label>
+            <input id="hHorz" type="number" value="80" min="20" step="5" />
+          </div>
+          <div>
+            <label>Width b<sub>h</sub> (mm)</label>
+            <input id="bHorz" type="number" value="60" min="20" step="5" />
+          </div>
+          <div>
+            <label>Thickness t<sub>h</sub> (mm)</label>
+            <input id="tHorz" type="number" value="6" min="3" step="1" />
+          </div>
+        </div>
+        <div class="info-box">
+          <small><i class="fa-solid fa-info-circle"></i> Stiffeners reduce required plate thickness and prevent buckling</small>
+        </div>
+      </div>
     </div>
 
     <div class="card" id="out" style="margin-top:1rem">
@@ -232,12 +312,18 @@
         <button class="tab" data-tab="anchors">Anchor Bolts</button>
         <button class="tab" data-tab="spacing">Spacing & Edge</button>
         <button class="tab" data-tab="shearkey">Shear Key</button>
+        <button class="tab" data-tab="conditions">Load Conditions</button>
+        <button class="tab" data-tab="platedesign">Plate Design</button>
+        <button class="tab" data-tab="stiffeners">Stiffeners</button>
         <button class="tab" data-tab="summary">Summary</button>
       </div>
       <div id="tab-base" class="panel"></div>
       <div id="tab-anchors" class="panel" style="display:none"></div>
       <div id="tab-spacing" class="panel" style="display:none"></div>
       <div id="tab-shearkey" class="panel" style="display:none"></div>
+      <div id="tab-conditions" class="panel" style="display:none"></div>
+      <div id="tab-platedesign" class="panel" style="display:none"></div>
+      <div id="tab-stiffeners" class="panel" style="display:none"></div>
       <div id="tab-summary" class="panel" style="display:none"></div>
     </div>
 
@@ -279,6 +365,14 @@
       const eL = val('eL'), eB = val('eB');
       const bk = val('bk'), hk = val('hk'), aw = val('aw'), lk = val('lk');
       const P = val('P'), M_ed = val('M_ed'), mu = val('mu');
+
+      // Tank/Vessel parameters
+      const tankH = val('tankH'), tankD = val('tankD'), rho = val('rho');
+      const factorStatic = val('factorStatic'), factorFilling = val('factorFilling'), factorEmptying = val('factorEmptying');
+
+      // Stiffener parameters
+      const nVert = val('nVert'), hVert = val('hVert'), bVert = val('bVert'), tVert = val('tVert');
+      const nHorz = val('nHorz'), hHorz = val('hHorz'), bHorz = val('bHorz'), tHorz = val('tHorz');
 
       // ======= BASE PLATE CALCULATIONS =======
       const area = Math.max(L * B, 1);
@@ -353,6 +447,132 @@
       const sigma_key = (M_key * 1e6) / (W_key * 1000);  // MPa
       const sigma_key_allow = fy / gammaM;
 
+      // ======= LOAD CONDITIONS CALCULATIONS =======
+      const g = 9.81;  // m/s²
+      const tankArea = Math.PI * Math.pow(tankD / 2, 2);  // m²
+      const liquidVolume = tankArea * tankH;  // m³
+      const liquidWeight = liquidVolume * rho * g / 1000;  // kN
+
+      // Static condition
+      const P_static = liquidWeight * factorStatic;
+      const pressure_static = (rho * g * tankH) / 1000;  // kPa
+
+      // Filling condition
+      const P_filling = liquidWeight * factorFilling;
+      const pressure_filling = (rho * g * tankH * factorFilling) / 1000;  // kPa
+
+      // Emptying condition
+      const P_emptying = liquidWeight * factorEmptying;
+      const pressure_emptying = (rho * g * tankH * factorEmptying) / 1000;  // kPa
+
+      // Governing condition
+      const conditions = [
+        {name: 'Static', load: P_static, pressure: pressure_static, factor: factorStatic},
+        {name: 'Filling', load: P_filling, pressure: pressure_filling, factor: factorFilling},
+        {name: 'Emptying', load: P_emptying, pressure: pressure_emptying, factor: factorEmptying}
+      ];
+      const governing = conditions.reduce((max, c) => c.load > max.load ? c : max, conditions[0]);
+
+      // ======= PLATE DESIGN CALCULATIONS =======
+      // Panel dimensions (between stiffeners)
+      const panelL = nVert > 0 ? L / (nVert + 1) : L;  // Spacing between vertical stiffeners
+      const panelB = nHorz > 0 ? B / (nHorz + 1) : B;  // Spacing between horizontal stiffeners
+      const panelArea = panelL * panelB;
+
+      // Maximum bending moment in unstiffened panel (simply supported on 4 edges)
+      const q = governing.pressure;  // kPa = kN/m²
+      const alpha = Math.min(panelL / panelB, panelB / panelL);  // Aspect ratio factor
+      const beta = 0.0513 * (1 - 0.21 * alpha + 0.0072 * Math.pow(alpha, 2));  // Moment coefficient
+      const M_panel = beta * q * Math.pow(Math.min(panelL, panelB), 2);  // kNm/m
+
+      // Required plate thickness (bending)
+      const sigma_allow_plate = 0.66 * fy / gammaM;
+      const t_req_bending = Math.sqrt((6 * M_panel * 1e6) / sigma_allow_plate);  // mm
+
+      // Deflection check
+      const E = 200000;  // MPa (steel modulus)
+      const I_plate = (1000 * Math.pow(t, 3)) / 12;  // mm⁴ per meter width
+      const delta_max = (0.0138 * q * Math.pow(Math.min(panelL, panelB), 4) * 1e12) / (E * I_plate);  // mm
+      const delta_allow = Math.min(panelL, panelB) / 250;  // Typical limit: span/250
+      const deflection_ok = delta_max <= delta_allow;
+
+      // Buckling check (compression zone)
+      const k_buckling = 4.0;  // Simply supported on 4 edges
+      const sigma_cr = (k_buckling * Math.pow(Math.PI, 2) * E * Math.pow(t, 2)) / (12 * (1 - 0.3 * 0.3) * Math.pow(Math.min(panelL, panelB), 2));
+      const buckling_ok = sigma_cr > sigma_allow_plate;
+
+      // Effective thickness with stiffeners
+      const stiffener_reduction = Math.min(0.3, (nVert + nHorz) * 0.05);  // Up to 30% reduction
+      const t_req_with_stiffeners = t_req_bending * (1 - stiffener_reduction);
+
+      // ======= VERTICAL STIFFENER CALCULATIONS =======
+      let vertStiffener = null;
+      if (nVert > 0) {
+        const A_vert = hVert * tVert;  // mm²
+        const I_vert = (tVert * Math.pow(hVert, 3)) / 12;  // mm⁴
+        const Z_vert = I_vert / (hVert / 2);  // mm³
+        
+        // Effective width of plate acting with stiffener
+        const b_eff = Math.min(30 * t, panelL / 2);  // mm
+        const A_eff = A_vert + b_eff * t;  // mm²
+        const I_eff = I_vert + (b_eff * Math.pow(t, 3)) / 12 + b_eff * t * Math.pow((hVert / 2 + t / 2), 2);  // mm⁴
+        
+        // Moment on stiffener (tributary area)
+        const M_stiff = q * panelL * Math.pow(B, 2) / 8 / 1000;  // kNm
+        const sigma_stiff = (M_stiff * 1e6) / Z_vert;  // MPa
+        const sigma_stiff_allow = fy / gammaM;
+        const stiff_ok = sigma_stiff <= sigma_stiff_allow;
+        
+        // Buckling check for stiffener
+        const L_eff_stiff = B;  // Effective length
+        const r_vert = Math.sqrt(I_eff / A_eff);  // Radius of gyration
+        const lambda_vert = L_eff_stiff / r_vert;  // Slenderness ratio
+        const lambda_allow = 180;  // Typical limit
+        const buckling_stiff_ok = lambda_vert <= lambda_allow;
+        
+        vertStiffener = {
+          A: A_vert, I: I_vert, Z: Z_vert,
+          A_eff, I_eff, b_eff,
+          M: M_stiff, sigma: sigma_stiff, sigma_allow: sigma_stiff_allow,
+          lambda: lambda_vert, lambda_allow,
+          stress_ok: stiff_ok, buckling_ok: buckling_stiff_ok
+        };
+      }
+
+      // ======= HORIZONTAL STIFFENER CALCULATIONS =======
+      let horzStiffener = null;
+      if (nHorz > 0) {
+        const A_horz = hHorz * tHorz;  // mm²
+        const I_horz = (tHorz * Math.pow(hHorz, 3)) / 12;  // mm⁴
+        const Z_horz = I_horz / (hHorz / 2);  // mm³
+        
+        // Effective width of plate acting with stiffener
+        const b_eff = Math.min(30 * t, panelB / 2);  // mm
+        const A_eff = A_horz + b_eff * t;  // mm²
+        const I_eff = I_horz + (b_eff * Math.pow(t, 3)) / 12 + b_eff * t * Math.pow((hHorz / 2 + t / 2), 2);  // mm⁴
+        
+        // Moment on stiffener (tributary area)
+        const M_stiff = q * panelB * Math.pow(L, 2) / 8 / 1000;  // kNm
+        const sigma_stiff = (M_stiff * 1e6) / Z_horz;  // MPa
+        const sigma_stiff_allow = fy / gammaM;
+        const stiff_ok = sigma_stiff <= sigma_stiff_allow;
+        
+        // Buckling check for stiffener
+        const L_eff_stiff = L;  // Effective length
+        const r_horz = Math.sqrt(I_eff / A_eff);  // Radius of gyration
+        const lambda_horz = L_eff_stiff / r_horz;  // Slenderness ratio
+        const lambda_allow = 180;  // Typical limit
+        const buckling_stiff_ok = lambda_horz <= lambda_allow;
+        
+        horzStiffener = {
+          A: A_horz, I: I_horz, Z: Z_horz,
+          A_eff, I_eff, b_eff,
+          M: M_stiff, sigma: sigma_stiff, sigma_allow: sigma_stiff_allow,
+          lambda: lambda_horz, lambda_allow,
+          stress_ok: stiff_ok, buckling_ok: buckling_stiff_ok
+        };
+      }
+
       state.results = {
         code: CP.name,
         gammaM: gammaM,
@@ -378,6 +598,27 @@
         shearkey: {
           bearing_stress, bearing_allow,
           V_Rd_weld, sigma_key, sigma_key_allow
+        },
+        conditions: {
+          static: conditions[0],
+          filling: conditions[1],
+          emptying: conditions[2],
+          governing: governing,
+          tankVolume: liquidVolume,
+          tankWeight: liquidWeight
+        },
+        plateDesign: {
+          panelL, panelB, panelArea,
+          M_panel, t_req_bending, t_req_with_stiffeners,
+          sigma_allow_plate,
+          delta_max, delta_allow, deflection_ok,
+          sigma_cr, buckling_ok,
+          stiffener_reduction
+        },
+        stiffeners: {
+          vertical: vertStiffener,
+          horizontal: horzStiffener,
+          nVert, nHorz
         }
       };
 
@@ -395,6 +636,9 @@
         document.getElementById('tab-anchors').innerHTML = '';
         document.getElementById('tab-spacing').innerHTML = '';
         document.getElementById('tab-shearkey').innerHTML = '';
+        document.getElementById('tab-conditions').innerHTML = '';
+        document.getElementById('tab-platedesign').innerHTML = '';
+        document.getElementById('tab-stiffeners').innerHTML = '';
         document.getElementById('tab-summary').innerHTML = '';
         return;
       }
@@ -576,14 +820,220 @@
         </div>
       `;
 
+      // LOAD CONDITIONS TAB
+      document.getElementById('tab-conditions').innerHTML = `
+        <div class="grid">
+          <div class="stat ${r.conditions.governing.name === 'Static' ? 'pass' : ''}">
+            <h4>Static Condition</h4>
+            <div class="v">${ps(r.conditions.static.load)}</div>
+            <div class="sub">kN (factor: ${ps(r.conditions.static.factor, 2)})</div>
+            <div class="sub">Pressure: ${ps(r.conditions.static.pressure)} kPa</div>
+          </div>
+          <div class="stat ${r.conditions.governing.name === 'Filling' ? 'pass' : ''}">
+            <h4>Filling Condition</h4>
+            <div class="v">${ps(r.conditions.filling.load)}</div>
+            <div class="sub">kN (factor: ${ps(r.conditions.filling.factor, 2)})</div>
+            <div class="sub">Pressure: ${ps(r.conditions.filling.pressure)} kPa</div>
+          </div>
+          <div class="stat ${r.conditions.governing.name === 'Emptying' ? 'pass' : ''}">
+            <h4>Emptying Condition</h4>
+            <div class="v">${ps(r.conditions.emptying.load)}</div>
+            <div class="sub">kN (factor: ${ps(r.conditions.emptying.factor, 2)})</div>
+            <div class="sub">Pressure: ${ps(r.conditions.emptying.pressure)} kPa</div>
+          </div>
+          <div class="stat pass">
+            <h4>Governing Condition</h4>
+            <div class="v">${r.conditions.governing.name}</div>
+            <div class="sub">${ps(r.conditions.governing.load)} kN</div>
+            <div class="sub">Used for design</div>
+          </div>
+          <div class="stat">
+            <h4>Tank Volume</h4>
+            <div class="v">${ps(r.conditions.tankVolume, 1)}</div>
+            <div class="sub">m³</div>
+          </div>
+          <div class="stat">
+            <h4>Liquid Weight</h4>
+            <div class="v">${ps(r.conditions.tankWeight, 1)}</div>
+            <div class="sub">kN</div>
+          </div>
+        </div>
+        <div class="calc-detail">
+          <b>Load condition analysis:</b><br>
+          • Static: Full tank at rest with factor ${ps(r.conditions.static.factor, 2)}<br>
+          • Filling: Dynamic effects during filling with factor ${ps(r.conditions.filling.factor, 2)}<br>
+          • Emptying: Dynamic effects during emptying with factor ${ps(r.conditions.emptying.factor, 2)}<br>
+          • Governing condition: <b>${r.conditions.governing.name}</b> with ${ps(r.conditions.governing.load)} kN<br>
+          • Base pressure: ρ·g·H = ${ps(val('rho'))} × 9.81 × ${ps(val('tankH'))} = ${ps(r.conditions.static.pressure)} kPa
+        </div>
+      `;
+
+      // PLATE DESIGN TAB
+      const t_ok = val('t') >= r.plateDesign.t_req_bending;
+      const t_ok_stiff = val('t') >= r.plateDesign.t_req_with_stiffeners;
+
+      document.getElementById('tab-platedesign').innerHTML = `
+        <div class="grid">
+          <div class="stat ${t_ok ? 'pass' : 'fail'}">
+            <h4>Required Thickness (No Stiffeners)</h4>
+            <div class="v">${ps(r.plateDesign.t_req_bending)}</div>
+            <div class="sub">mm ≤ ${ps(val('t'))} mm provided</div>
+            <div class="sub">${t_ok ? '✓ PASS' : '✗ FAIL'}</div>
+          </div>
+          <div class="stat ${t_ok_stiff ? 'pass' : 'fail'}">
+            <h4>Required Thickness (With Stiffeners)</h4>
+            <div class="v">${ps(r.plateDesign.t_req_with_stiffeners)}</div>
+            <div class="sub">mm ≤ ${ps(val('t'))} mm provided</div>
+            <div class="sub">${t_ok_stiff ? '✓ PASS' : '✗ FAIL'}</div>
+          </div>
+          <div class="stat">
+            <h4>Panel Dimensions</h4>
+            <div class="v">${ps(r.plateDesign.panelL)} × ${ps(r.plateDesign.panelB)}</div>
+            <div class="sub">mm (between stiffeners)</div>
+          </div>
+          <div class="stat">
+            <h4>Panel Moment</h4>
+            <div class="v">${ps(r.plateDesign.M_panel, 3)}</div>
+            <div class="sub">kNm/m</div>
+          </div>
+          <div class="stat ${r.plateDesign.deflection_ok ? 'pass' : 'fail'}">
+            <h4>Deflection Check</h4>
+            <div class="v">${ps(r.plateDesign.delta_max, 2)}</div>
+            <div class="sub">mm ≤ ${ps(r.plateDesign.delta_allow, 2)} mm (span/250)</div>
+            <div class="sub">${r.plateDesign.deflection_ok ? '✓ PASS' : '✗ FAIL'}</div>
+          </div>
+          <div class="stat ${r.plateDesign.buckling_ok ? 'pass' : 'fail'}">
+            <h4>Buckling Check</h4>
+            <div class="v">${ps(r.plateDesign.sigma_cr)}</div>
+            <div class="sub">MPa > ${ps(r.plateDesign.sigma_allow_plate)} MPa</div>
+            <div class="sub">${r.plateDesign.buckling_ok ? '✓ PASS' : '✗ FAIL'}</div>
+          </div>
+        </div>
+        <div class="calc-detail">
+          <b>Plate design calculations:</b><br>
+          • Panel treated as simply supported on 4 edges<br>
+          • Bending moment: M = β·q·a² where β = moment coefficient, q = pressure, a = short span<br>
+          • Required thickness: t = √(6M/σ<sub>allow</sub>)<br>
+          • Stiffener reduction: ${ps(r.plateDesign.stiffener_reduction * 100, 1)}% (${r.stiffeners.nVert} vert + ${r.stiffeners.nHorz} horz)<br>
+          • Allowable stress: σ<sub>allow</sub> = 0.66·f<sub>y</sub>/γ<sub>m</sub> = ${ps(r.plateDesign.sigma_allow_plate)} MPa<br>
+          ${!t_ok ? '<span class="danger-text">⚠ Plate thickness insufficient! Increase thickness or add stiffeners.</span>' : '<span class="success-text">✓ Plate thickness adequate</span>'}
+        </div>
+      `;
+
+      // STIFFENERS TAB
+      let stiffHTML = '<div class="grid">';
+      
+      if (r.stiffeners.vertical) {
+        const v = r.stiffeners.vertical;
+        stiffHTML += `
+          <div class="stat ${v.stress_ok ? 'pass' : 'fail'}">
+            <h4>Vertical Stiffener Stress</h4>
+            <div class="v">${ps(v.sigma)}</div>
+            <div class="sub">MPa ≤ ${ps(v.sigma_allow)} MPa</div>
+            <div class="sub">${v.stress_ok ? '✓ PASS' : '✗ FAIL'}</div>
+          </div>
+          <div class="stat ${v.buckling_ok ? 'pass' : 'fail'}">
+            <h4>Vertical Stiffener Slenderness</h4>
+            <div class="v">${ps(v.lambda, 1)}</div>
+            <div class="sub">≤ ${ps(v.lambda_allow)} (limit)</div>
+            <div class="sub">${v.buckling_ok ? '✓ PASS' : '✗ FAIL'}</div>
+          </div>
+          <div class="stat">
+            <h4>Vertical Stiffener Section</h4>
+            <div class="v">${ps(val('hVert'))} × ${ps(val('tVert'))}</div>
+            <div class="sub">mm (${r.stiffeners.nVert} stiffeners)</div>
+            <div class="sub">A = ${ps(v.A)} mm²</div>
+          </div>
+          <div class="stat">
+            <h4>Vertical Effective Width</h4>
+            <div class="v">${ps(v.b_eff)}</div>
+            <div class="sub">mm (plate acting with stiffener)</div>
+            <div class="sub">A<sub>eff</sub> = ${ps(v.A_eff)} mm²</div>
+          </div>
+        `;
+      } else {
+        stiffHTML += `
+          <div class="stat warn">
+            <h4>Vertical Stiffeners</h4>
+            <div class="v">None</div>
+            <div class="sub">No vertical stiffeners specified</div>
+          </div>
+        `;
+      }
+
+      if (r.stiffeners.horizontal) {
+        const h = r.stiffeners.horizontal;
+        stiffHTML += `
+          <div class="stat ${h.stress_ok ? 'pass' : 'fail'}">
+            <h4>Horizontal Stiffener Stress</h4>
+            <div class="v">${ps(h.sigma)}</div>
+            <div class="sub">MPa ≤ ${ps(h.sigma_allow)} MPa</div>
+            <div class="sub">${h.stress_ok ? '✓ PASS' : '✗ FAIL'}</div>
+          </div>
+          <div class="stat ${h.buckling_ok ? 'pass' : 'fail'}">
+            <h4>Horizontal Stiffener Slenderness</h4>
+            <div class="v">${ps(h.lambda, 1)}</div>
+            <div class="sub">≤ ${ps(h.lambda_allow)} (limit)</div>
+            <div class="sub">${h.buckling_ok ? '✓ PASS' : '✗ FAIL'}</div>
+          </div>
+          <div class="stat">
+            <h4>Horizontal Stiffener Section</h4>
+            <div class="v">${ps(val('hHorz'))} × ${ps(val('tHorz'))}</div>
+            <div class="sub">mm (${r.stiffeners.nHorz} stiffeners)</div>
+            <div class="sub">A = ${ps(h.A)} mm²</div>
+          </div>
+          <div class="stat">
+            <h4>Horizontal Effective Width</h4>
+            <div class="v">${ps(h.b_eff)}</div>
+            <div class="sub">mm (plate acting with stiffener)</div>
+            <div class="sub">A<sub>eff</sub> = ${ps(h.A_eff)} mm²</div>
+          </div>
+        `;
+      } else {
+        stiffHTML += `
+          <div class="stat warn">
+            <h4>Horizontal Stiffeners</h4>
+            <div class="v">None</div>
+            <div class="sub">No horizontal stiffeners specified</div>
+          </div>
+        `;
+      }
+
+      stiffHTML += '</div>';
+
+      stiffHTML += '<div class="calc-detail"><b>Stiffener design notes:</b><br>';
+      if (r.stiffeners.vertical) {
+        const v = r.stiffeners.vertical;
+        stiffHTML += `• Vertical: I = ${ps(v.I)} mm⁴, Z = ${ps(v.Z)} mm³, M = ${ps(v.M, 2)} kNm<br>`;
+      }
+      if (r.stiffeners.horizontal) {
+        const h = r.stiffeners.horizontal;
+        stiffHTML += `• Horizontal: I = ${ps(h.I)} mm⁴, Z = ${ps(h.Z)} mm³, M = ${ps(h.M, 2)} kNm<br>`;
+      }
+      stiffHTML += '• Effective width: b<sub>eff</sub> = min(30t, panel/2)<br>';
+      stiffHTML += '• Slenderness: λ = L<sub>eff</sub>/r where r = √(I<sub>eff</sub>/A<sub>eff</sub>)<br>';
+      stiffHTML += '• Stiffeners should be welded to plate with adequate fillet welds';
+      stiffHTML += '</div>';
+
+      document.getElementById('tab-stiffeners').innerHTML = stiffHTML;
+
       // SUMMARY TAB
+      const ok_plate_thickness = val('t') >= r.plateDesign.t_req_with_stiffeners;
+      const ok_vert_stiff = !r.stiffeners.vertical || (r.stiffeners.vertical.stress_ok && r.stiffeners.vertical.buckling_ok);
+      const ok_horz_stiff = !r.stiffeners.horizontal || (r.stiffeners.horizontal.stress_ok && r.stiffeners.horizontal.buckling_ok);
+
       const allOK = ok_bearing && ok_bending && ok_T_bolt && ok_T_conc &&
                     ok_V_bolt && ok_interaction && all_spacing_ok &&
-                    ok_bear && ok_weld && ok_stem;
+                    ok_bear && ok_weld && ok_stem &&
+                    ok_plate_thickness && r.plateDesign.deflection_ok && r.plateDesign.buckling_ok &&
+                    ok_vert_stiff && ok_horz_stiff;
 
       const checks = [
         {name: 'Bearing Pressure', ok: ok_bearing},
         {name: 'Plate Bending', ok: ok_bending},
+        {name: 'Plate Thickness', ok: ok_plate_thickness},
+        {name: 'Plate Deflection', ok: r.plateDesign.deflection_ok},
+        {name: 'Plate Buckling', ok: r.plateDesign.buckling_ok},
         {name: 'Bolt Tension (Steel)', ok: ok_T_bolt},
         {name: 'Bolt Tension (Concrete)', ok: ok_T_conc},
         {name: 'Bolt Shear', ok: ok_V_bolt},
@@ -591,7 +1041,9 @@
         {name: 'Bolt Spacing', ok: all_spacing_ok},
         {name: 'Key Bearing', ok: ok_bear},
         {name: 'Key Weld', ok: ok_weld},
-        {name: 'Key Stem', ok: ok_stem}
+        {name: 'Key Stem', ok: ok_stem},
+        {name: 'Vertical Stiffeners', ok: ok_vert_stiff},
+        {name: 'Horizontal Stiffeners', ok: ok_horz_stiff}
       ];
 
       const passed = checks.filter(c => c.ok).length;
@@ -626,7 +1078,10 @@
           • Safety factors: γ<sub>m</sub> = ${ps(r.gammaM, 2)}, γ<sub>c</sub> = ${ps(r.gammaC, 2)}<br>
           • Base plate: ${ps(val('L'))} × ${ps(val('B'))} × ${ps(val('t'))} mm<br>
           • Anchor bolts: ${val('nB')} × M${ps(val('dB'), 0)} (pitch ${ps(val('pitch'))} mm)<br>
-          • Loads: P = ${ps(val('P'))} kN, M = ${ps(val('M_ed'))} kNm, T = ${ps(val('T_ed'))} kN, V = ${ps(val('V_ed'))} kN
+          • Loads: P = ${ps(val('P'))} kN, M = ${ps(val('M_ed'))} kNm, T = ${ps(val('T_ed'))} kN, V = ${ps(val('V_ed'))} kN<br>
+          • Tank: H = ${ps(val('tankH'))} m, D = ${ps(val('tankD'))} m, ρ = ${ps(val('rho'))} kg/m³<br>
+          • Governing condition: <b>${r.conditions.governing.name}</b> (${ps(r.conditions.governing.load)} kN)<br>
+          • Stiffeners: ${r.stiffeners.nVert} vertical + ${r.stiffeners.nHorz} horizontal
         </div>
 
         ${!allOK ? `
@@ -634,11 +1089,16 @@
           <b class="danger-text">Action Required:</b><br>
           ${!ok_bearing ? '• Increase base plate area or concrete strength<br>' : ''}
           ${!ok_bending ? '• Increase plate thickness or reduce cantilever<br>' : ''}
+          ${!ok_plate_thickness ? '• Increase plate thickness or add/strengthen stiffeners<br>' : ''}
+          ${!r.plateDesign.deflection_ok ? '• Reduce deflection: increase thickness or add stiffeners<br>' : ''}
+          ${!r.plateDesign.buckling_ok ? '• Prevent buckling: increase thickness or reduce panel size<br>' : ''}
           ${!ok_T_bolt || !ok_T_conc ? '• Increase bolt diameter, add more bolts, or increase embedment<br>' : ''}
           ${!ok_V_bolt ? '• Increase bolt diameter or add more bolts<br>' : ''}
           ${!ok_interaction ? '• Critical: Increase bolt capacity for combined tension-shear<br>' : ''}
           ${!all_spacing_ok ? '• Adjust bolt spacing or edge distances per code requirements<br>' : ''}
           ${!ok_bear || !ok_weld || !ok_stem ? '• Strengthen shear key geometry or weld size<br>' : ''}
+          ${!ok_vert_stiff ? '• Strengthen vertical stiffeners or reduce spacing<br>' : ''}
+          ${!ok_horz_stiff ? '• Strengthen horizontal stiffeners or reduce spacing<br>' : ''}
         </div>
         ` : ''}
       `;
@@ -654,7 +1114,7 @@
         const btn = document.querySelector(`#out .tab[data-tab="${key}"]`);
         if(btn) btn.classList.add('active');
       }
-      ['base','anchors','spacing','shearkey','summary'].forEach(k => {
+      ['base','anchors','spacing','shearkey','conditions','platedesign','stiffeners','summary'].forEach(k => {
         const pane = document.getElementById('tab-' + k);
         if(pane) pane.style.display = (k === key) ? 'block' : 'none';
       });
