@@ -233,11 +233,43 @@
             margin: 10px 0;
         }
 
-        .roof-diagram {
-            width: 100%;
-            max-width: 600px;
-            margin: 20px auto;
-            display: block;
+        .zone-diagram {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .zone-diagram h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .zone-visual {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .zone-box {
+            background: white;
+            border: 2px solid #667eea;
+            padding: 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .btn {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -251,6 +283,7 @@
                 <span class="chip"><i class="fas fa-book"></i> IS 875-3:2015</span>
                 <span class="chip"><i class="fas fa-table"></i> Table 22</span>
                 <span class="chip"><i class="fas fa-home"></i> Roof with Skylight</span>
+                <span class="chip"><i class="fas fa-calculator"></i> Cpe, Cpi, Combined</span>
             </div>
         </div>
 
@@ -260,8 +293,9 @@
 
             <div class="alert alert-info">
                 <strong><i class="fas fa-info-circle"></i> About Table 22:</strong>
-                This table provides pressure coefficients for roofs with skylights. The coefficients vary based on roof slope,
-                building dimensions, and internal pressure conditions.
+                This table provides pressure coefficients for roofs with skylights according to IS 875-3:2015.
+                The coefficients vary based on roof slope, building dimensions, and internal pressure conditions
+                due to skylight openings.
             </div>
 
             <div class="input-grid">
@@ -340,23 +374,28 @@
                 <div id="cpiResults"></div>
 
                 <div class="section-header">
-                    <i class="fas fa-calculator"></i> Combined Coefficients
+                    <i class="fas fa-calculator"></i> Combined Coefficients (Cpe ± Cpi)
                 </div>
                 <div id="combinedResults"></div>
 
                 <div class="note">
                     <strong><i class="fas fa-exclamation-triangle"></i> Important Notes:</strong><br>
-                    • Use Cpe - Cpi for outward (suction) forces on roof elements<br>
-                    • Use Cpe + Cpi for inward (pressure) forces on roof elements<br>
+                    • Use <strong>Cpe - Cpi (max)</strong> for maximum uplift/suction forces (critical for fasteners)<br>
+                    • Use <strong>Cpe + Cpi (max)</strong> for maximum inward pressure forces (structural design)<br>
                     • For structural design, consider the most critical combination<br>
                     • Values shown are for normal wind direction (perpendicular to building face)<br>
-                    • Skylight openings affect internal pressure significantly
+                    • Skylight openings significantly affect internal pressure
                 </div>
             </div>
 
             <div class="card">
                 <div class="title"><i class="fas fa-file-alt"></i> Design Recommendations</div>
                 <div id="recommendations"></div>
+            </div>
+
+            <div class="card">
+                <div class="title"><i class="fas fa-ruler-combined"></i> Zone Definitions</div>
+                <div id="zoneDefinitions"></div>
             </div>
         </div>
     </div>
@@ -595,7 +634,8 @@
                     </tr>
                 </table>
                 <div class="formula">
-                    <strong>Formula:</strong> Internal pressure depends on ratio of openings on windward vs leeward faces
+                    <strong>Note:</strong> Internal pressure depends on ratio of openings on windward vs leeward faces.
+                    Skylights significantly affect internal pressure distribution.
                 </div>
             `;
 
@@ -605,10 +645,11 @@
                     <tr>
                         <th>Zone</th>
                         <th>Cpe</th>
-                        <th>Cpe - Cpi (max)</th>
-                        <th>Cpe - Cpi (min)</th>
-                        <th>Cpe + Cpi (max)</th>
-                        <th>Cpe + Cpi (min)</th>
+                        <th>Cpe - Cpi (max suction)</th>
+                        <th>Cpe - Cpi (min suction)</th>
+                        <th>Cpe + Cpi (max pressure)</th>
+                        <th>Cpe + Cpi (min pressure)</th>
+                        <th>Critical Value</th>
                     </tr>
             `;
 
@@ -619,6 +660,12 @@
                 const cpe_plus_cpi_max = cpe + cpiRange.max;  // Most pressure
                 const cpe_plus_cpi_min = cpe + cpiRange.min;  // Least pressure
 
+                // Find critical (most severe) value
+                const values = [cpe_minus_cpi_max, cpe_minus_cpi_min, cpe_plus_cpi_max, cpe_plus_cpi_min];
+                const criticalValue = Math.abs(Math.min(...values)) > Math.abs(Math.max(...values))
+                    ? Math.min(...values)
+                    : Math.max(...values);
+
                 combinedTable += `
                     <tr>
                         <td><strong>${zone}</strong></td>
@@ -627,11 +674,17 @@
                         <td><span class="coefficient-box ${cpe_minus_cpi_min >= 0 ? 'positive' : 'negative'}">${cpe_minus_cpi_min.toFixed(2)}</span></td>
                         <td><span class="coefficient-box ${cpe_plus_cpi_max >= 0 ? 'positive' : 'negative'}">${cpe_plus_cpi_max.toFixed(2)}</span></td>
                         <td><span class="coefficient-box ${cpe_plus_cpi_min >= 0 ? 'positive' : 'negative'}">${cpe_plus_cpi_min.toFixed(2)}</span></td>
+                        <td><strong><span class="coefficient-box ${criticalValue >= 0 ? 'positive' : 'negative'}">${criticalValue.toFixed(2)}</span></strong></td>
                     </tr>
                 `;
             });
 
-            combinedTable += `</table>`;
+            combinedTable += `</table>
+            <div class="formula">
+                <strong>Design Wind Pressure Formula:</strong><br>
+                p<sub>d</sub> = 0.6 × V<sub>z</sub>² × C<sub>p</sub> (in N/m²)<br>
+                where V<sub>z</sub> = design wind speed at height z (m/s), C<sub>p</sub> = combined coefficient
+            </div>`;
             document.getElementById('combinedResults').innerHTML = combinedTable;
 
             // Generate recommendations
@@ -640,32 +693,88 @@
                     <strong><i class="fas fa-lightbulb"></i> Design Recommendations:</strong><br><br>
 
                     <strong>1. Critical Load Cases:</strong><br>
-                    • For uplift (suction) design: Use maximum negative values from Cpe - Cpi (max)<br>
-                    • For downward pressure: Use positive values from Cpe + Cpi (max)<br><br>
+                    • For uplift (suction) design: Use maximum negative values from <strong>Cpe - Cpi (max suction)</strong><br>
+                    • For downward pressure: Use positive values (if any) from <strong>Cpe + Cpi (max pressure)</strong><br>
+                    • Zone A typically governs for edge fasteners and cladding<br><br>
 
                     <strong>2. Skylight Considerations:</strong><br>
                     • Skylight area is ${skylightRatio}% of total roof area<br>
-                    • ${skylightRatio > 5 ? '⚠️ Large skylight area may significantly affect internal pressure' : '✓ Skylight area is relatively small'}<br>
-                    • Ensure skylight frames can withstand differential pressures<br><br>
+                    • ${parseFloat(skylightRatio) > 5 ? '⚠️ Large skylight area significantly affects internal pressure - use appropriate Cpi values' : '✓ Skylight area is relatively small'}<br>
+                    • Ensure skylight frames can withstand differential pressures<br>
+                    • Consider progressive opening scenarios<br><br>
 
                     <strong>3. Zone-specific Design:</strong><br>
-                    • Zone A typically experiences highest suction (edge effects)<br>
-                    • Use appropriate fastener spacing for high-suction zones<br>
-                    • Consider additional anchoring near skylights<br><br>
+                    • Zone A experiences highest suction (edge effects) - ${edgeZoneWidth.toFixed(2)}m from edge<br>
+                    • Use appropriate fastener spacing for high-suction zones (reduced spacing in Zone A)<br>
+                    • Consider additional anchoring near skylight perimeters<br>
+                    • Edge and corner details are critical<br><br>
 
-                    <strong>4. Wind Direction:</strong><br>
+                    <strong>4. Wind Direction Analysis:</strong><br>
                     • These coefficients are for wind perpendicular to building face<br>
-                    • Analyze multiple wind directions for complete design<br>
-                    • Consider oblique wind angles as per IS 875-3 guidelines<br><br>
+                    • Analyze multiple wind directions (0°, 45°, 90°) for complete design<br>
+                    • Consider oblique wind angles as per IS 875-3 guidelines<br>
+                    • Check all possible wind attack angles<br><br>
 
-                    <strong>5. Design Wind Pressure:</strong><br>
-                    • p<sub>d</sub> = 0.6 × V<sub>z</sub>² × C<sub>p</sub> (in N/m²)<br>
-                    • where V<sub>z</sub> is design wind speed at height z (m/s)<br>
-                    • Apply appropriate load factors as per IS 875-3
+                    <strong>5. Design Wind Pressure Calculation:</strong><br>
+                    • Calculate V<sub>z</sub> using: V<sub>z</sub> = V<sub>b</sub> × k<sub>1</sub> × k<sub>2</sub> × k<sub>3</sub><br>
+                    • V<sub>b</sub> from wind zone map (IS 875-3 Figure 1)<br>
+                    • k<sub>1</sub> = terrain, height, and structure size factor<br>
+                    • k<sub>2</sub> = topography factor (typically 1.0)<br>
+                    • k<sub>3</sub> = importance factor (typically 1.0)<br>
+                    • Apply load factors: 1.5 for ultimate limit state<br><br>
+
+                    <strong>6. Combination with Other Loads:</strong><br>
+                    • Combine with dead load, live load as per IS 800 or governing code<br>
+                    • Check serviceability limits (deflections)<br>
+                    • Consider fatigue for cyclic wind loads on connections
                 </div>
             `;
 
             document.getElementById('recommendations').innerHTML = recommendations;
+
+            // Generate zone definitions diagram
+            let zoneDefinitionsHTML = `
+                <div class="alert alert-info">
+                    <strong>Zone Definitions for ${roofType.charAt(0).toUpperCase() + roofType.slice(1)} Roof:</strong><br><br>
+            `;
+
+            if (roofType === 'duopitch') {
+                zoneDefinitionsHTML += `
+                    <strong>Windward Slope Zones:</strong><br>
+                    • <strong>Zone A:</strong> Edge strip along windward eave (width = h/10 = ${edgeZoneWidth.toFixed(2)}m)<br>
+                    • <strong>Zone B:</strong> Transition zone between A and C<br>
+                    • <strong>Zone C:</strong> Central windward roof area<br><br>
+                    <strong>Leeward Slope Zones:</strong><br>
+                    • <strong>Zone D:</strong> Edge strip along leeward eave (width = h/10)<br>
+                    • <strong>Zone E:</strong> Transition zone on leeward slope<br>
+                    • <strong>Zone F:</strong> Central leeward roof area<br><br>
+                `;
+            } else if (roofType === 'monopitch') {
+                zoneDefinitionsHTML += `
+                    • <strong>Zone A:</strong> High edge strip (width = h/10 = ${edgeZoneWidth.toFixed(2)}m) - Critical zone!<br>
+                    • <strong>Zone B:</strong> Middle transition zone<br>
+                    • <strong>Zone C:</strong> Central roof area<br>
+                    • <strong>Zone D:</strong> Low edge strip (width = h/10)<br><br>
+                `;
+            } else {
+                zoneDefinitionsHTML += `
+                    • <strong>Zone A:</strong> Corner zones (${cornerZoneSize.toFixed(2)}m × ${cornerZoneSize.toFixed(2)}m) - Highest suction!<br>
+                    • <strong>Zone B:</strong> Edge strips excluding corners (width = h/10 = ${edgeZoneWidth.toFixed(2)}m)<br>
+                    • <strong>Zone C:</strong> Remaining roof area between edges<br>
+                    • <strong>Zone D:</strong> Interior zone away from all edges<br><br>
+                `;
+            }
+
+            zoneDefinitionsHTML += `
+                    <strong>Key Parameters:</strong><br>
+                    • Building height (h): ${buildingHeight} m<br>
+                    • Building width (b): ${buildingWidth} m<br>
+                    • Edge zone width: h/10 = ${edgeZoneWidth.toFixed(2)} m<br>
+                    • Always measure zones from roof edges/eaves
+                </div>
+            `;
+
+            document.getElementById('zoneDefinitions').innerHTML = zoneDefinitionsHTML;
 
             // Show output section
             document.body.classList.add('output-visible');
@@ -674,7 +783,7 @@
             document.getElementById('output').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Initial calculation on page load
+        // Initial setup
         window.addEventListener('load', function() {
             // Don't auto-calculate, wait for user input
         });
