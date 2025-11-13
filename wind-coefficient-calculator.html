@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Coefficient Calculator - IS 875:2015 Part 3 (Table 22)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .info-chips {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .chip {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            margin-bottom: 25px;
+        }
+
+        .card .title {
+            font-size: 1.4em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .input-group input,
+        .input-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .results-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .results-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .results-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .results-table tr:hover {
+            background-color: #f0f0ff;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .alert-warning {
+            background-color: #fff3e0;
+            color: #f57c00;
+            border-left: 4px solid #f57c00;
+        }
+
+        .coefficient-box {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .positive {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .negative {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .section-header {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 20px 0 10px 0;
+            color: #667eea;
+        }
+
+        .note {
+            background: #fffde7;
+            border-left: 4px solid #fbc02d;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .note strong {
+            color: #f57f17;
+        }
+
+        #output {
+            display: none;
+        }
+
+        .output-visible #output {
+            display: block;
+        }
+
+        .formula {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+
+        .roof-diagram {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-wind"></i> Wind Coefficient Calculator</h1>
+            <p>IS 875:2015 Part 3 - Table 22: Roofs with Skylight</p>
+            <div class="info-chips">
+                <span class="chip"><i class="fas fa-book"></i> IS 875-3:2015</span>
+                <span class="chip"><i class="fas fa-table"></i> Table 22</span>
+                <span class="chip"><i class="fas fa-home"></i> Roof with Skylight</span>
+            </div>
+        </div>
+
+        <!-- Input Card -->
+        <div class="card">
+            <div class="title"><i class="fas fa-keyboard"></i> Input Parameters</div>
+
+            <div class="alert alert-info">
+                <strong><i class="fas fa-info-circle"></i> About Table 22:</strong>
+                This table provides pressure coefficients for roofs with skylights. The coefficients vary based on roof slope,
+                building dimensions, and internal pressure conditions.
+            </div>
+
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="roofType">Roof Type:</label>
+                    <select id="roofType">
+                        <option value="duopitch">Duo-pitch (Gable) Roof</option>
+                        <option value="monopitch">Mono-pitch Roof</option>
+                        <option value="flat">Flat Roof with Skylight</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="roofSlope">Roof Slope (α in degrees):</label>
+                    <input type="number" id="roofSlope" value="15" min="0" max="45" step="5">
+                </div>
+
+                <div class="input-group">
+                    <label for="buildingWidth">Building Width (b in m):</label>
+                    <input type="number" id="buildingWidth" value="20" min="5" max="100" step="1">
+                </div>
+
+                <div class="input-group">
+                    <label for="buildingLength">Building Length (d in m):</label>
+                    <input type="number" id="buildingLength" value="30" min="5" max="100" step="1">
+                </div>
+
+                <div class="input-group">
+                    <label for="buildingHeight">Building Height (h in m):</label>
+                    <input type="number" id="buildingHeight" value="10" min="3" max="50" step="1">
+                </div>
+
+                <div class="input-group">
+                    <label for="skylightArea">Skylight Area (m²):</label>
+                    <input type="number" id="skylightArea" value="10" min="1" max="100" step="1">
+                </div>
+
+                <div class="input-group">
+                    <label for="roofArea">Total Roof Area (m²):</label>
+                    <input type="number" id="roofArea" value="600" min="10" max="10000" step="10">
+                </div>
+
+                <div class="input-group">
+                    <label for="openingCondition">Internal Pressure Condition:</label>
+                    <select id="openingCondition">
+                        <option value="small">Small Openings (Cpi = ±0.2)</option>
+                        <option value="medium">Medium Openings (Cpi = ±0.5)</option>
+                        <option value="large">Large Openings (Cpi = -0.5 to +0.7)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn" onclick="calculateCoefficients()">
+                <i class="fas fa-calculator"></i> Calculate Wind Coefficients
+            </button>
+        </div>
+
+        <!-- Output Card -->
+        <div id="output">
+            <div class="card">
+                <div class="title"><i class="fas fa-chart-bar"></i> Wind Pressure Coefficients</div>
+
+                <div class="section-header">
+                    <i class="fas fa-info-circle"></i> Building Geometry Ratios
+                </div>
+                <div id="geometryRatios"></div>
+
+                <div class="section-header">
+                    <i class="fas fa-arrow-right"></i> External Pressure Coefficients (Cpe)
+                </div>
+                <div id="cpeResults"></div>
+
+                <div class="section-header">
+                    <i class="fas fa-arrow-left"></i> Internal Pressure Coefficients (Cpi)
+                </div>
+                <div id="cpiResults"></div>
+
+                <div class="section-header">
+                    <i class="fas fa-calculator"></i> Combined Coefficients
+                </div>
+                <div id="combinedResults"></div>
+
+                <div class="note">
+                    <strong><i class="fas fa-exclamation-triangle"></i> Important Notes:</strong><br>
+                    • Use Cpe - Cpi for outward (suction) forces on roof elements<br>
+                    • Use Cpe + Cpi for inward (pressure) forces on roof elements<br>
+                    • For structural design, consider the most critical combination<br>
+                    • Values shown are for normal wind direction (perpendicular to building face)<br>
+                    • Skylight openings affect internal pressure significantly
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="title"><i class="fas fa-file-alt"></i> Design Recommendations</div>
+                <div id="recommendations"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // IS 875-3:2015 Table 22 Data for Roofs with Skylight
+        const TABLE_22_DATA = {
+            duopitch: {
+                // Windward slope
+                windward: {
+                    5: { A: -0.8, B: -0.6, C: -0.3 },
+                    10: { A: -0.9, B: -0.7, C: -0.4 },
+                    15: { A: -1.0, B: -0.8, C: -0.5 },
+                    20: { A: -0.9, B: -0.7, C: -0.4 },
+                    25: { A: -0.8, B: -0.6, C: -0.3 },
+                    30: { A: -0.7, B: -0.5, C: -0.2 },
+                    35: { A: -0.5, B: -0.4, C: -0.2 },
+                    40: { A: -0.3, B: -0.3, C: -0.2 },
+                    45: { A: -0.2, B: -0.2, C: -0.2 }
+                },
+                // Leeward slope
+                leeward: {
+                    all: { D: -0.6, E: -0.6, F: -0.6 }
+                }
+            },
+            monopitch: {
+                5: { A: -1.2, B: -0.8, C: -0.5 },
+                10: { A: -1.3, B: -1.0, C: -0.7 },
+                15: { A: -1.4, B: -1.2, C: -0.8 },
+                20: { A: -1.3, B: -1.1, C: -0.7 },
+                25: { A: -1.2, B: -1.0, C: -0.6 },
+                30: { A: -1.1, B: -0.9, C: -0.5 }
+            },
+            flat: {
+                A: -1.5, B: -1.2, C: -0.8, D: -0.6
+            }
+        };
+
+        // Internal pressure coefficients based on opening conditions
+        const INTERNAL_PRESSURE = {
+            small: { min: -0.2, max: 0.2 },
+            medium: { min: -0.5, max: 0.5 },
+            large: { min: -0.5, max: 0.7 }
+        };
+
+        function getInputValue(id) {
+            return parseFloat(document.getElementById(id).value) || 0;
+        }
+
+        function getSelectValue(id) {
+            return document.getElementById(id).value;
+        }
+
+        function interpolate(x, x1, x2, y1, y2) {
+            return y1 + (y2 - y1) * (x - x1) / (x2 - x1);
+        }
+
+        function getCpeForSlope(roofType, slope, zone) {
+            const data = TABLE_22_DATA[roofType];
+
+            if (roofType === 'flat') {
+                return data[zone];
+            }
+
+            // Round to nearest 5 degrees
+            const angles = Object.keys(roofType === 'duopitch' ? data.windward : data).map(Number);
+            const roundedSlope = Math.round(slope / 5) * 5;
+
+            if (roofType === 'duopitch') {
+                if (zone === 'D' || zone === 'E' || zone === 'F') {
+                    return data.leeward.all[zone];
+                }
+
+                const slopeData = data.windward[roundedSlope] || data.windward[15];
+                return slopeData[zone];
+            } else {
+                const slopeData = data[roundedSlope] || data[15];
+                return slopeData[zone];
+            }
+        }
+
+        function calculateCoefficients() {
+            // Get inputs
+            const roofType = getSelectValue('roofType');
+            const roofSlope = getInputValue('roofSlope');
+            const buildingWidth = getInputValue('buildingWidth');
+            const buildingLength = getInputValue('buildingLength');
+            const buildingHeight = getInputValue('buildingHeight');
+            const skylightArea = getInputValue('skylightArea');
+            const roofArea = getInputValue('roofArea');
+            const openingCondition = getSelectValue('openingCondition');
+
+            // Calculate geometry ratios
+            const h_b_ratio = buildingHeight / buildingWidth;
+            const d_b_ratio = buildingLength / buildingWidth;
+            const skylightRatio = (skylightArea / roofArea * 100).toFixed(2);
+
+            // Display geometry ratios
+            document.getElementById('geometryRatios').innerHTML = `
+                <table class="results-table">
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Value</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>h/b</td>
+                        <td>${h_b_ratio.toFixed(2)}</td>
+                        <td>Height to width ratio</td>
+                    </tr>
+                    <tr>
+                        <td>d/b</td>
+                        <td>${d_b_ratio.toFixed(2)}</td>
+                        <td>Length to width ratio</td>
+                    </tr>
+                    <tr>
+                        <td>Skylight %</td>
+                        <td>${skylightRatio}%</td>
+                        <td>Skylight area as % of total roof area</td>
+                    </tr>
+                    <tr>
+                        <td>Roof Slope (α)</td>
+                        <td>${roofSlope}°</td>
+                        <td>Roof pitch angle</td>
+                    </tr>
+                </table>
+            `;
+
+            // Get Cpe values for different zones
+            let cpeValues = {};
+            let zones = [];
+
+            if (roofType === 'duopitch') {
+                zones = ['A', 'B', 'C', 'D', 'E', 'F'];
+                zones.forEach(zone => {
+                    cpeValues[zone] = getCpeForSlope(roofType, roofSlope, zone);
+                });
+            } else if (roofType === 'monopitch') {
+                zones = ['A', 'B', 'C'];
+                zones.forEach(zone => {
+                    cpeValues[zone] = getCpeForSlope(roofType, roofSlope, zone);
+                });
+            } else { // flat roof
+                zones = ['A', 'B', 'C', 'D'];
+                zones.forEach(zone => {
+                    cpeValues[zone] = getCpeForSlope(roofType, roofSlope, zone);
+                });
+            }
+
+            // Display Cpe values
+            let cpeTable = `
+                <table class="results-table">
+                    <tr>
+                        <th>Zone</th>
+                        <th>External Pressure Coefficient (Cpe)</th>
+                        <th>Zone Description</th>
+                    </tr>
+            `;
+
+            const zoneDescriptions = {
+                A: 'Windward edge zone (high suction)',
+                B: 'Middle windward zone',
+                C: 'Central zone',
+                D: 'Leeward edge zone',
+                E: 'Middle leeward zone',
+                F: 'Leeward central zone'
+            };
+
+            zones.forEach(zone => {
+                const cpe = cpeValues[zone];
+                const colorClass = cpe >= 0 ? 'positive' : 'negative';
+                cpeTable += `
+                    <tr>
+                        <td><strong>${zone}</strong></td>
+                        <td><span class="coefficient-box ${colorClass}">${cpe.toFixed(2)}</span></td>
+                        <td>${zoneDescriptions[zone] || 'Roof zone'}</td>
+                    </tr>
+                `;
+            });
+
+            cpeTable += `</table>`;
+            document.getElementById('cpeResults').innerHTML = cpeTable;
+
+            // Get Cpi values
+            const cpiRange = INTERNAL_PRESSURE[openingCondition];
+
+            // Display Cpi values
+            document.getElementById('cpiResults').innerHTML = `
+                <table class="results-table">
+                    <tr>
+                        <th>Opening Condition</th>
+                        <th>Cpi (min)</th>
+                        <th>Cpi (max)</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>${openingCondition.charAt(0).toUpperCase() + openingCondition.slice(1)} Openings</td>
+                        <td><span class="coefficient-box negative">${cpiRange.min.toFixed(2)}</span></td>
+                        <td><span class="coefficient-box positive">${cpiRange.max.toFixed(2)}</span></td>
+                        <td>Skylight area: ${skylightArea} m² (${skylightRatio}% of roof)</td>
+                    </tr>
+                </table>
+                <div class="formula">
+                    <strong>Formula:</strong> Internal pressure depends on ratio of openings on windward vs leeward faces
+                </div>
+            `;
+
+            // Calculate combined coefficients
+            let combinedTable = `
+                <table class="results-table">
+                    <tr>
+                        <th>Zone</th>
+                        <th>Cpe</th>
+                        <th>Cpe - Cpi (max)</th>
+                        <th>Cpe - Cpi (min)</th>
+                        <th>Cpe + Cpi (max)</th>
+                        <th>Cpe + Cpi (min)</th>
+                    </tr>
+            `;
+
+            zones.forEach(zone => {
+                const cpe = cpeValues[zone];
+                const cpe_minus_cpi_max = cpe - cpiRange.min; // Most suction
+                const cpe_minus_cpi_min = cpe - cpiRange.max; // Least suction
+                const cpe_plus_cpi_max = cpe + cpiRange.max;  // Most pressure
+                const cpe_plus_cpi_min = cpe + cpiRange.min;  // Least pressure
+
+                combinedTable += `
+                    <tr>
+                        <td><strong>${zone}</strong></td>
+                        <td><span class="coefficient-box ${cpe >= 0 ? 'positive' : 'negative'}">${cpe.toFixed(2)}</span></td>
+                        <td><span class="coefficient-box ${cpe_minus_cpi_max >= 0 ? 'positive' : 'negative'}">${cpe_minus_cpi_max.toFixed(2)}</span></td>
+                        <td><span class="coefficient-box ${cpe_minus_cpi_min >= 0 ? 'positive' : 'negative'}">${cpe_minus_cpi_min.toFixed(2)}</span></td>
+                        <td><span class="coefficient-box ${cpe_plus_cpi_max >= 0 ? 'positive' : 'negative'}">${cpe_plus_cpi_max.toFixed(2)}</span></td>
+                        <td><span class="coefficient-box ${cpe_plus_cpi_min >= 0 ? 'positive' : 'negative'}">${cpe_plus_cpi_min.toFixed(2)}</span></td>
+                    </tr>
+                `;
+            });
+
+            combinedTable += `</table>`;
+            document.getElementById('combinedResults').innerHTML = combinedTable;
+
+            // Generate recommendations
+            let recommendations = `
+                <div class="alert alert-warning">
+                    <strong><i class="fas fa-lightbulb"></i> Design Recommendations:</strong><br><br>
+
+                    <strong>1. Critical Load Cases:</strong><br>
+                    • For uplift (suction) design: Use maximum negative values from Cpe - Cpi (max)<br>
+                    • For downward pressure: Use positive values from Cpe + Cpi (max)<br><br>
+
+                    <strong>2. Skylight Considerations:</strong><br>
+                    • Skylight area is ${skylightRatio}% of total roof area<br>
+                    • ${skylightRatio > 5 ? '⚠️ Large skylight area may significantly affect internal pressure' : '✓ Skylight area is relatively small'}<br>
+                    • Ensure skylight frames can withstand differential pressures<br><br>
+
+                    <strong>3. Zone-specific Design:</strong><br>
+                    • Zone A typically experiences highest suction (edge effects)<br>
+                    • Use appropriate fastener spacing for high-suction zones<br>
+                    • Consider additional anchoring near skylights<br><br>
+
+                    <strong>4. Wind Direction:</strong><br>
+                    • These coefficients are for wind perpendicular to building face<br>
+                    • Analyze multiple wind directions for complete design<br>
+                    • Consider oblique wind angles as per IS 875-3 guidelines<br><br>
+
+                    <strong>5. Design Wind Pressure:</strong><br>
+                    • p<sub>d</sub> = 0.6 × V<sub>z</sub>² × C<sub>p</sub> (in N/m²)<br>
+                    • where V<sub>z</sub> is design wind speed at height z (m/s)<br>
+                    • Apply appropriate load factors as per IS 875-3
+                </div>
+            `;
+
+            document.getElementById('recommendations').innerHTML = recommendations;
+
+            // Show output section
+            document.body.classList.add('output-visible');
+
+            // Scroll to results
+            document.getElementById('output').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initial calculation on page load
+        window.addEventListener('load', function() {
+            // Don't auto-calculate, wait for user input
+        });
+    </style>
+</body>
+</html>
