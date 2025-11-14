@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D to 3D Model Converter - One-Stop Solution</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        /* ===================================
+           Global Styles & Variables
+           =================================== */
+        :root {
+            /* Color Palette */
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --primary-light: #3b82f6;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+
+            /* Neutrals */
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --black: #000000;
+
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-info: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+
+            /* Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+            --spacing-3xl: 4rem;
+
+            /* Border Radius */
+            --radius-sm: 0.25rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            --radius-2xl: 1.5rem;
+            --radius-full: 9999px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+            /* Transitions */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* Typography */
+            --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        /* Reset & Base */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            color: var(--gray-800);
+            background: var(--gradient-primary);
+            background-attachment: fixed;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-100);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-400);
+            border-radius: var(--radius-full);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-500);
+        }
+
+        /* ===================================
+           Header
+           =================================== */
+        .header {
+            background: var(--white);
+            box-shadow: var(--shadow-md);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-lg);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg) 0;
+            gap: var(--spacing-lg);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            letter-spacing: -0.5px;
+        }
+
+        .badge {
+            background: var(--gradient-primary);
+            color: var(--white);
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-sm);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .nav {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        /* ===================================
+           Main Content
+           =================================== */
+        .main {
+            padding: var(--spacing-2xl) 0;
+            min-height: calc(100vh - 100px);
+        }
+
+        .section {
+            margin-bottom: var(--spacing-xl);
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section.hidden {
+            display: none;
+        }
+
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-2xl);
+            position: relative;
+            padding: 0 var(--spacing-md);
+        }
+
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 1.5rem;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: -1;
+            border-radius: var(--radius-full);
+        }
+
+        .step {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        .step-number {
+            width: 3rem;
+            height: 3rem;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--white);
+            transition: all var(--transition-base);
+            border: 3px solid transparent;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .step-label {
+            color: var(--white);
+            font-weight: 600;
+            font-size: 0.875rem;
+            opacity: 0.7;
+            transition: all var(--transition-base);
+            text-align: center;
+        }
+
+        .step.active .step-number {
+            background: var(--white);
+            color: var(--primary);
+            transform: scale(1.15);
+            border-color: var(--white);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), var(--shadow-xl);
+        }
+
+        .step.active .step-label {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .step.completed .step-number {
+            background: var(--success);
+            color: var(--white);
+            border-color: var(--success);
+        }
+
+        .step.completed .step-number::after {
+            content: '✓';
+            position: absolute;
+            font-size: 1rem;
+            font-weight: 900;
+        }
+
+        .step:hover:not(.active) .step-number {
+            transform: scale(1.05);
+        }
+
+        /* Card */
+        .card {
+            background: var(--white);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-2xl);
+            overflow: hidden;
+            transition: all var(--transition-base);
+        }
+
+        .card:hover {
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            padding: var(--spacing-xl);
+            border-bottom: 2px solid var(--gray-100);
+            background: linear-gradient(to bottom, var(--white), var(--gray-50));
+        }
+
+        .card-header h2 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .card-header h2 i {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-header p {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+        }
+
+        .card-body {
+            padding: var(--spacing-xl);
+        }
+
+        /* ===================================
+           Upload Zone
+           =================================== */
+        .upload-zone {
+            border: 3px dashed var(--gray-300);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-3xl) var(--spacing-2xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+            transform: scale(1.01);
+        }
+
+        .upload-zone:hover::before {
+            opacity: 1;
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--primary);
+            background: var(--primary);
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(37, 99, 235, 0.3);
+        }
+
+        .upload-zone i {
+            font-size: 5rem;
+            color: var(--primary);
+            margin-bottom: var(--spacing-lg);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-zone h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .upload-zone p {
+            color: var(--gray-600);
+            margin-bottom: var(--spacing-lg);
+            font-size: 1rem;
+        }
+
+        /* File Info */
+        .file-info {
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-xl);
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+            border-radius: var(--radius-xl);
+            margin-bottom: var(--spacing-lg);
+            border: 2px solid var(--gray-200);
+            transition: all var(--transition-base);
+        }
+
+        .file-preview:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .file-icon {
+            font-size: 3.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-details h4 {
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: var(--gray-900);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .file-details p {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+        }
+
+        /* ===================================
+           Stats Grid
+           =================================== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-xl);
+            border: 2px solid var(--gray-200);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform var(--transition-base);
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card h4 {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .value {
+            font-size: 2.25rem;
+            font-weight: 900;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ===================================
+           Entities Section
+           =================================== */
+        .entities-section,
+        .params-section {
+            margin: var(--spacing-xl) 0;
+        }
+
+        .entities-section h3,
+        .params-section h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-lg);
+            color: var(--gray-800);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .entities-section h3::before,
+        .params-section h3::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-full);
+        }
+
+        .entities-list {
+            display: grid;
+            gap: var(--spacing-md);
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: var(--spacing-sm);
+        }
+
+        .entity-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--gray-200);
+            transition: all var(--transition-base);
+        }
+
+        .entity-item:hover {
+            border-color: var(--primary);
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .entity-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: var(--radius-lg);
+            background: var(--gradient-primary);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .entity-info {
+            flex: 1;
+        }
+
+        .entity-info h5 {
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .entity-info p {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+        }
+
+        /* ===================================
+           Parameters Section
+           =================================== */
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-xl);
+        }
+
+        .param-group {
+            position: relative;
+        }
+
+        .param-group label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-sm);
+            font-size: 0.875rem;
+        }
+
+        .param-group label i {
+            color: var(--primary);
+        }
+
+        .param-group input {
+            width: 100%;
+            padding: var(--spacing-md) var(--spacing-lg);
+            padding-right: 3.5rem;
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius-lg);
+            font-size: 1.125rem;
+            font-weight: 600;
+            font-family: var(--font-sans);
+            transition: all var(--transition-base);
+            background: var(--white);
+        }
+
+        .param-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .param-group .unit {
+            position: absolute;
+            right: var(--spacing-lg);
+            bottom: var(--spacing-md);
+            color: var(--gray-500);
+            font-size: 0.875rem;
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        /* ===================================
+           3D Viewer
+           =================================== */
+        .viewer-container {
+            position: relative;
+            height: 550px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-2xl);
+            border: 3px solid var(--gray-800);
+        }
+
+        #viewer3D {
+            width: 100%;
+            height: 100%;
+        }
+
+        .viewer-controls {
+            position: absolute;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        /* ===================================
+           Software Guide
+           =================================== */
+        .software-guide {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .software-guide h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-lg);
+            color: var(--gray-800);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .software-guide h3::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-full);
+        }
+
+        .software-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .software-item {
+            text-align: center;
+            padding: var(--spacing-lg);
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-xl);
+            background: linear-gradient(135deg, var(--white) 0%, var(--gray-50) 100%);
+            transition: all var(--transition-base);
+            cursor: pointer;
+        }
+
+        .software-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .software-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto var(--spacing-md);
+            border-radius: var(--radius-lg);
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 900;
+            font-size: 1.75rem;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-base);
+        }
+
+        .software-item:hover .software-icon {
+            transform: scale(1.1) rotateY(180deg);
+        }
+
+        .software-item h4 {
+            font-size: 0.875rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-sm);
+            color: var(--gray-800);
+        }
+
+        .format-badge {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            background: var(--primary);
+            color: var(--white);
+            border-radius: var(--radius-full);
+            font-size: 0.625rem;
+            font-weight: 700;
+            margin: 0.125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===================================
+           Export Formats
+           =================================== */
+        .export-formats {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .export-formats h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-lg);
+            color: var(--gray-800);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .export-formats h3::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-full);
+        }
+
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .format-option {
+            cursor: pointer;
+        }
+
+        .format-option input {
+            display: none;
+        }
+
+        .format-card {
+            padding: var(--spacing-xl);
+            border: 3px solid var(--gray-200);
+            border-radius: var(--radius-xl);
+            text-align: center;
+            transition: all var(--transition-base);
+            background: linear-gradient(135deg, var(--white) 0%, var(--gray-50) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .format-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform var(--transition-base);
+        }
+
+        .format-option:hover .format-card {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .format-option input:checked + .format-card {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+        }
+
+        .format-option input:checked + .format-card::before {
+            transform: scaleX(1);
+        }
+
+        .format-card i {
+            font-size: 2.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .format-card h4 {
+            font-weight: 700;
+            font-size: 1.125rem;
+            margin-bottom: var(--spacing-sm);
+            color: var(--gray-900);
+        }
+
+        .format-card p {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            line-height: 1.4;
+        }
+
+        /* ===================================
+           Buttons
+           =================================== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: 0.875rem 1.75rem;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            font-family: var(--font-sans);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: var(--white);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--gray-800);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-300);
+            transform: translateY(-2px);
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-large {
+            padding: 1.125rem 2.25rem;
+            font-size: 1rem;
+        }
+
+        .btn-icon {
+            width: 3rem;
+            height: 3rem;
+            padding: 0;
+            border-radius: var(--radius-lg);
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--white);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: rgba(0, 0, 0, 0.8);
+            border-color: var(--white);
+            transform: scale(1.1);
+        }
+
+        .export-actions {
+            display: flex;
+            gap: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .export-actions .btn {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        /* ===================================
+           Loading Overlay
+           =================================== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            color: var(--white);
+        }
+
+        .loading-spinner i {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-lg);
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 10px rgba(37, 99, 235, 0.5));
+        }
+
+        .loading-spinner p {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        /* ===================================
+           Toast Notifications
+           =================================== */
+        .toast-container {
+            position: fixed;
+            top: var(--spacing-xl);
+            right: var(--spacing-xl);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .toast {
+            min-width: 320px;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-2xl);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            color: var(--white);
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast i {
+            font-size: 1.5rem;
+        }
+
+        .toast.success {
+            background: var(--gradient-success);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .toast.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .toast.info {
+            background: var(--gradient-info);
+        }
+
+        /* ===================================
+           Utilities
+           =================================== */
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ===================================
+           Responsive Design
+           =================================== */
+        @media (max-width: 1024px) {
+            .container {
+                padding: 0 var(--spacing-md);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .logo h1 {
+                font-size: 1.25rem;
+            }
+
+            .badge {
+                font-size: 0.625rem;
+                padding: 0.2rem 0.5rem;
+            }
+
+            .progress-steps {
+                flex-wrap: wrap;
+                gap: var(--spacing-lg);
+            }
+
+            .step {
+                min-width: 120px;
+            }
+
+            .stats-grid,
+            .params-grid,
+            .software-grid,
+            .format-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .export-actions {
+                flex-direction: column;
+            }
+
+            .export-actions .btn {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .viewer-container {
+                height: 400px;
+            }
+
+            .toast-container {
+                top: var(--spacing-md);
+                right: var(--spacing-md);
+                left: var(--spacing-md);
+            }
+
+            .toast {
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .logo {
+                flex-direction: column;
+            }
+
+            .card-header h2 {
+                font-size: 1.25rem;
+            }
+
+            .upload-zone {
+                padding: var(--spacing-xl);
+            }
+
+            .upload-zone i {
+                font-size: 3rem;
+            }
+        }
+
+        /* ===================================
+           Print Styles
+           =================================== */
+        @media print {
+            .header,
+            .loading-overlay,
+            .toast-container,
+            .viewer-controls,
+            .btn {
+                display: none !important;
+            }
+
+            body {
+                background: var(--white);
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid var(--gray-300);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-cube"></i>
+                    <div class="logo-text">
+                        <h1>2D to 3D Converter</h1>
+                        <span class="badge">One-Stop Solution</span>
+                    </div>
+                </div>
+                <nav class="nav">
+                    <button class="btn btn-secondary" onclick="showHelp()">
+                        <i class="fas fa-question-circle"></i> Help
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Progress Steps -->
+            <div class="progress-steps">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Upload Drawing</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Parse & Extract</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Generate 3D</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Export</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Upload -->
+            <section class="section" id="step-upload">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-upload"></i> Upload 2D Drawing</h2>
+                        <p>Supported formats: DXF, DWG, PDF, PNG, JPEG • Maximum file size: 50 MB</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Drag & Drop Zone -->
+                        <div class="upload-zone" id="uploadZone">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Drag & Drop your file here</h3>
+                            <p>or click the button below to browse</p>
+                            <input type="file" id="fileInput" accept=".dxf,.dwg,.pdf,.png,.jpg,.jpeg" hidden>
+                            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open"></i> Browse Files
+                            </button>
+                        </div>
+
+                        <!-- File Info -->
+                        <div class="file-info hidden" id="fileInfo">
+                            <div class="file-preview">
+                                <i class="fas fa-file-alt file-icon"></i>
+                                <div class="file-details">
+                                    <h4 id="fileName">-</h4>
+                                    <p><span id="fileSize">-</span> • <span id="fileType">-</span></p>
+                                </div>
+                                <button class="btn-icon" onclick="removeFile()" title="Remove File">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-primary btn-block btn-large" onclick="parseFile()">
+                                <i class="fas fa-cogs"></i> Parse Drawing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Parse Results -->
+            <section class="section hidden" id="step-parse">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-search"></i> Parsing Results</h2>
+                        <p>Extracted entities and geometric information from your drawing</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid" id="parseStats">
+                            <!-- Dynamic stats will be inserted here -->
+                        </div>
+
+                        <!-- Parsed Entities -->
+                        <div class="entities-section">
+                            <h3>Detected Entities</h3>
+                            <div class="entities-list" id="entitiesList">
+                                <!-- Dynamic entity list will be inserted here -->
+                            </div>
+                        </div>
+
+                        <!-- Conversion Parameters -->
+                        <div class="params-section">
+                            <h3>Conversion Parameters</h3>
+                            <div class="params-grid">
+                                <div class="param-group">
+                                    <label for="extrusionHeight">
+                                        <i class="fas fa-arrows-alt-v"></i> Extrusion Height
+                                    </label>
+                                    <input type="number" id="extrusionHeight" value="100" min="1" step="10">
+                                    <span class="unit">mm</span>
+                                </div>
+                                <div class="param-group">
+                                    <label for="thickness">
+                                        <i class="fas fa-layer-group"></i> Wall Thickness
+                                    </label>
+                                    <input type="number" id="thickness" value="10" min="0.1" step="1">
+                                    <span class="unit">mm</span>
+                                </div>
+                                <div class="param-group">
+                                    <label for="scale">
+                                        <i class="fas fa-expand-arrows-alt"></i> Scale Factor
+                                    </label>
+                                    <input type="number" id="scale" value="1.0" min="0.1" step="0.1" max="10">
+                                    <span class="unit">×</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-block btn-large" onclick="convertTo3D()">
+                            <i class="fas fa-cube"></i> Generate 3D Model
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 3: 3D Viewer -->
+            <section class="section hidden" id="step-viewer">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-eye"></i> 3D Model Preview</h2>
+                        <p>Interactive 3D visualization • Use mouse to orbit, pan, and zoom</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- 3D Viewer -->
+                        <div class="viewer-container">
+                            <canvas id="viewer3D"></canvas>
+                            <div class="viewer-controls">
+                                <button class="btn-icon" onclick="resetCamera()" title="Reset View">
+                                    <i class="fas fa-home"></i>
+                                </button>
+                                <button class="btn-icon" onclick="toggleWireframe()" title="Toggle Wireframe">
+                                    <i class="fas fa-project-diagram"></i>
+                                </button>
+                                <button class="btn-icon" onclick="toggleGrid()" title="Toggle Grid">
+                                    <i class="fas fa-th"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Model Stats -->
+                        <div class="stats-grid" id="modelStats">
+                            <!-- Dynamic stats will be inserted here -->
+                        </div>
+
+                        <button class="btn btn-primary btn-block btn-large" onclick="showExportOptions()">
+                            <i class="fas fa-download"></i> Export Model
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 4: Export Options -->
+            <section class="section hidden" id="step-export">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-file-export"></i> Export 3D Model</h2>
+                        <p>Choose format(s) compatible with your target software</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Software Compatibility Guide -->
+                        <div class="software-guide">
+                            <h3>Software Compatibility</h3>
+                            <div class="software-grid">
+                                <div class="software-item">
+                                    <div class="software-icon">R</div>
+                                    <h4>Revit</h4>
+                                    <span class="format-badge">IFC</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon">T</div>
+                                    <h4>Tekla</h4>
+                                    <span class="format-badge">IFC</span>
+                                    <span class="format-badge">STEP</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon">S</div>
+                                    <h4>STAAD Pro</h4>
+                                    <span class="format-badge">STEP</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon">N</div>
+                                    <h4>Navisworks</h4>
+                                    <span class="format-badge">IFC</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon">A</div>
+                                    <h4>AVEVA</h4>
+                                    <span class="format-badge">STEP</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon">An</div>
+                                    <h4>ANSYS</h4>
+                                    <span class="format-badge">STEP</span>
+                                    <span class="format-badge">IGES</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon">Ab</div>
+                                    <h4>Abaqus</h4>
+                                    <span class="format-badge">STEP</span>
+                                    <span class="format-badge">IGES</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Export Format Selection -->
+                        <div class="export-formats">
+                            <h3>Select Export Format(s)</h3>
+                            <div class="format-grid">
+                                <label class="format-option">
+                                    <input type="checkbox" value="ifc" checked>
+                                    <div class="format-card">
+                                        <i class="fas fa-building"></i>
+                                        <h4>IFC</h4>
+                                        <p>Industry Foundation Classes for BIM software (Revit, Tekla, Navisworks)</p>
+                                    </div>
+                                </label>
+                                <label class="format-option">
+                                    <input type="checkbox" value="step" checked>
+                                    <div class="format-card">
+                                        <i class="fas fa-cog"></i>
+                                        <h4>STEP</h4>
+                                        <p>ISO 10303 CAD standard for ANSYS, Abaqus, AVEVA, SolidWorks</p>
+                                    </div>
+                                </label>
+                                <label class="format-option">
+                                    <input type="checkbox" value="iges">
+                                    <div class="format-card">
+                                        <i class="fas fa-project-diagram"></i>
+                                        <h4>IGES</h4>
+                                        <p>Legacy CAD/FEA format for compatibility with older systems</p>
+                                    </div>
+                                </label>
+                                <label class="format-option">
+                                    <input type="checkbox" value="obj">
+                                    <div class="format-card">
+                                        <i class="fas fa-cube"></i>
+                                        <h4>OBJ</h4>
+                                        <p>Universal 3D format for visualization and general 3D software</p>
+                                    </div>
+                                </label>
+                                <label class="format-option">
+                                    <input type="checkbox" value="stl">
+                                    <div class="format-card">
+                                        <i class="fas fa-print"></i>
+                                        <h4>STL</h4>
+                                        <p>Standard format for 3D printing and mesh-based applications</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Export Buttons -->
+                        <div class="export-actions">
+                            <button class="btn btn-primary btn-large" onclick="exportAll()">
+                                <i class="fas fa-download"></i> Download All Selected Formats
+                            </button>
+                            <button class="btn btn-secondary btn-large" onclick="exportSingle()">
+                                <i class="fas fa-file-download"></i> Download Individual Files
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p id="loadingText">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- JavaScript -->
+    <script>
+        /**
+         * ========================================
+         * 2D to 3D Model Converter
+         * Complete Application Logic
+         * ========================================
+         */
+
+        // ========================================
+        // API Communication Module
+        // ========================================
+        const API_BASE_URL = window.location.origin;
+
+        const API = {
+            async uploadFile(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Upload failed');
+                }
+
+                return await response.json();
+            },
+
+            async parseFile(fileId, options = {}) {
+                const response = await fetch(`${API_BASE_URL}/api/parse`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: fileId, options: options })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Parsing failed');
+                }
+
+                return await response.json();
+            },
+
+            async convertTo3D(entities, parameters = {}) {
+                const response = await fetch(`${API_BASE_URL}/api/convert`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entities: entities, parameters: parameters })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Conversion failed');
+                }
+
+                return await response.json();
+            },
+
+            async exportModel(modelData, format, options = {}) {
+                const response = await fetch(`${API_BASE_URL}/api/export/${format}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_data: modelData, options: options })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || `Export to ${format} failed`);
+                }
+
+                return await response.blob();
+            },
+
+            async batchExport(modelData, formats, options = {}) {
+                const response = await fetch(`${API_BASE_URL}/api/batch-export`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_data: modelData, formats: formats, options: options })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Batch export failed');
+                }
+
+                return await response.blob();
+            },
+
+            async healthCheck() {
+                const response = await fetch(`${API_BASE_URL}/api/health`);
+                return await response.json();
+            }
+        };
+
+        // ========================================
+        // 3D Viewer Module
+        // ========================================
+        class Viewer3D {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                if (!this.canvas) return;
+
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null;
+                this.mesh = null;
+                this.grid = null;
+                this.axes = null;
+                this.wireframeMode = false;
+
+                this.init();
+            }
+
+            init() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x1a1a2e);
+
+                const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+                this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 10000);
+                this.camera.position.set(200, 200, 200);
+
+                this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+                this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+
+                this.controls = new THREE.OrbitControls(this.camera, this.canvas);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+
+                this.addLights();
+
+                this.grid = new THREE.GridHelper(1000, 20, 0x444444, 0x222222);
+                this.scene.add(this.grid);
+
+                this.axes = new THREE.AxesHelper(100);
+                this.scene.add(this.axes);
+
+                window.addEventListener('resize', () => this.onWindowResize());
+
+                this.animate();
+            }
+
+            addLights() {
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+
+                const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
+                light1.position.set(100, 200, 100);
+                this.scene.add(light1);
+
+                const light2 = new THREE.DirectionalLight(0xffffff, 0.4);
+                light2.position.set(-100, 200, -100);
+                this.scene.add(light2);
+            }
+
+            loadModel(modelData) {
+                if (this.mesh) {
+                    this.scene.remove(this.mesh);
+                    this.mesh.geometry.dispose();
+                    this.mesh.material.dispose();
+                }
+
+                const vertices = modelData.vertices;
+                const faces = modelData.faces;
+
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(vertices.flat());
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const indices = new Uint32Array(faces.flat());
+                geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+                geometry.computeVertexNormals();
+
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0x2563eb,
+                    specular: 0x111111,
+                    shininess: 30,
+                    side: THREE.DoubleSide
+                });
+
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.scene.add(this.mesh);
+
+                const wireframeGeometry = new THREE.WireframeGeometry(geometry);
+                const wireframeMaterial = new THREE.LineBasicMaterial({
+                    color: 0xffffff,
+                    opacity: 0.3,
+                    transparent: true
+                });
+                this.wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+                this.wireframe.visible = false;
+                this.scene.add(this.wireframe);
+
+                this.fitCameraToModel();
+            }
+
+            fitCameraToModel() {
+                if (!this.mesh) return;
+
+                const box = new THREE.Box3().setFromObject(this.mesh);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const fov = this.camera.fov * (Math.PI / 180);
+                let cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                cameraDistance *= 1.5;
+
+                const direction = this.camera.position.clone().sub(center).normalize();
+                this.camera.position.copy(direction.multiplyScalar(cameraDistance).add(center));
+                this.camera.lookAt(center);
+
+                this.controls.target.copy(center);
+                this.controls.update();
+            }
+
+            resetCamera() {
+                if (this.mesh) {
+                    this.fitCameraToModel();
+                } else {
+                    this.camera.position.set(200, 200, 200);
+                    this.camera.lookAt(0, 0, 0);
+                    this.controls.target.set(0, 0, 0);
+                    this.controls.update();
+                }
+            }
+
+            toggleWireframe() {
+                this.wireframeMode = !this.wireframeMode;
+                if (this.mesh) {
+                    this.mesh.material.wireframe = this.wireframeMode;
+                }
+            }
+
+            toggleGrid() {
+                if (this.grid) this.grid.visible = !this.grid.visible;
+                if (this.axes) this.axes.visible = !this.axes.visible;
+            }
+
+            onWindowResize() {
+                if (!this.canvas || !this.camera || !this.renderer) return;
+
+                const width = this.canvas.clientWidth;
+                const height = this.canvas.clientHeight;
+
+                this.camera.aspect = width / height;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(width, height);
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                if (this.controls) this.controls.update();
+                if (this.renderer && this.scene && this.camera) {
+                    this.renderer.render(this.scene, this.camera);
+                }
+            }
+        }
+
+        // ========================================
+        // Application State
+        // ========================================
+        const AppState = {
+            currentStep: 1,
+            uploadedFile: null,
+            fileId: null,
+            parseResult: null,
+            modelData: null,
+            viewer: null
+        };
+
+        // ========================================
+        // Application Initialization
+        // ========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 2D to 3D Converter initialized');
+            setupFileUpload();
+            checkAPIHealth();
+        });
+
+        // ========================================
+        // File Upload
+        // ========================================
+        function setupFileUpload() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                handleFileSelect(e.dataTransfer.files[0]);
+            });
+        }
+
+        async function handleFileSelect(file) {
+            if (!file) return;
+
+            const allowedTypes = ['dxf', 'dwg', 'pdf', 'png', 'jpg', 'jpeg'];
+            const extension = file.name.split('.').pop().toLowerCase();
+
+            if (!allowedTypes.includes(extension)) {
+                showToast('error', `File type .${extension} is not supported`);
+                return;
+            }
+
+            const maxSize = 50 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showToast('error', 'File size exceeds 50MB limit');
+                return;
+            }
+
+            AppState.uploadedFile = file;
+
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            document.getElementById('fileType').textContent = extension.toUpperCase();
+
+            const iconMap = {
+                'dxf': 'fa-file-code', 'dwg': 'fa-file-code',
+                'pdf': 'fa-file-pdf',
+                'png': 'fa-file-image', 'jpg': 'fa-file-image', 'jpeg': 'fa-file-image'
+            };
+
+            document.querySelector('.file-icon').className = `fas ${iconMap[extension] || 'fa-file'} file-icon`;
+            document.getElementById('uploadZone').classList.add('hidden');
+            document.getElementById('fileInfo').classList.remove('hidden');
+
+            try {
+                showLoading('Uploading file...');
+                const result = await API.uploadFile(file);
+                AppState.fileId = result.file_id;
+                hideLoading();
+                showToast('success', 'File uploaded successfully!');
+            } catch (error) {
+                hideLoading();
+                showToast('error', `Upload failed: ${error.message}`);
+                removeFile();
+            }
+        }
+
+        function removeFile() {
+            AppState.uploadedFile = null;
+            AppState.fileId = null;
+            document.getElementById('uploadZone').classList.remove('hidden');
+            document.getElementById('fileInfo').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+        }
+
+        // ========================================
+        // Parse File
+        // ========================================
+        async function parseFile() {
+            if (!AppState.fileId) {
+                showToast('error', 'No file uploaded');
+                return;
+            }
+
+            try {
+                showLoading('Parsing drawing...');
+                const result = await API.parseFile(AppState.fileId);
+                AppState.parseResult = result.parse_result;
+                hideLoading();
+
+                displayParseResults(AppState.parseResult);
+                setStep(2);
+                showToast('success', 'Drawing parsed successfully!');
+            } catch (error) {
+                hideLoading();
+                showToast('error', `Parsing failed: ${error.message}`);
+            }
+        }
+
+        function displayParseResults(parseResult) {
+            const { entities, metadata } = parseResult;
+
+            const statsHtml = `
+                <div class="stat-card">
+                    <h4>Total Entities</h4>
+                    <div class="value">${entities.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>File Type</h4>
+                    <div class="value">${metadata.filename.split('.').pop().toUpperCase()}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Layers</h4>
+                    <div class="value">${parseResult.layers?.length || 1}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Dimensions</h4>
+                    <div class="value">${parseResult.dimensions?.length || 0}</div>
+                </div>
+            `;
+            document.getElementById('parseStats').innerHTML = statsHtml;
+
+            const entityTypes = {};
+            entities.forEach(entity => {
+                const type = entity.type;
+                entityTypes[type] = (entityTypes[type] || 0) + 1;
+            });
+
+            const entityIconMap = {
+                'line': 'fa-minus', 'circle': 'fa-circle', 'arc': 'fa-bezier-curve',
+                'polyline': 'fa-draw-polygon', 'rectangle': 'fa-square',
+                'polygon': 'fa-draw-polygon', 'text': 'fa-font'
+            };
+
+            const entitiesHtml = Object.entries(entityTypes)
+                .map(([type, count]) => `
+                    <div class="entity-item">
+                        <div class="entity-icon">
+                            <i class="fas ${entityIconMap[type] || 'fa-shapes'}"></i>
+                        </div>
+                        <div class="entity-info">
+                            <h5>${type.charAt(0).toUpperCase() + type.slice(1)}s</h5>
+                            <p>${count} entities found</p>
+                        </div>
+                    </div>
+                `).join('');
+
+            document.getElementById('entitiesList').innerHTML = entitiesHtml;
+        }
+
+        // ========================================
+        // Convert to 3D
+        // ========================================
+        async function convertTo3D() {
+            if (!AppState.parseResult) {
+                showToast('error', 'No parsed data available');
+                return;
+            }
+
+            try {
+                showLoading('Generating 3D model...');
+
+                const parameters = {
+                    extrusion_height: parseFloat(document.getElementById('extrusionHeight').value),
+                    thickness: parseFloat(document.getElementById('thickness').value),
+                    scale: parseFloat(document.getElementById('scale').value)
+                };
+
+                const result = await API.convertTo3D(AppState.parseResult.entities, parameters);
+                AppState.modelData = result.model_3d;
+
+                hideLoading();
+
+                displayModelStats(AppState.modelData.stats);
+
+                if (!AppState.viewer) {
+                    AppState.viewer = new Viewer3D('viewer3D');
+                }
+
+                AppState.viewer.loadModel(AppState.modelData);
+
+                setStep(3);
+                showToast('success', '3D model generated successfully!');
+            } catch (error) {
+                hideLoading();
+                showToast('error', `Conversion failed: ${error.message}`);
+            }
+        }
+
+        function displayModelStats(stats) {
+            const statsHtml = `
+                <div class="stat-card">
+                    <h4>Vertices</h4>
+                    <div class="value">${stats.total_vertices.toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Faces</h4>
+                    <div class="value">${stats.total_faces.toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Meshes</h4>
+                    <div class="value">${stats.total_meshes}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Size</h4>
+                    <div class="value">${stats.bounding_box ?
+                        Math.max(...stats.bounding_box.size).toFixed(1) : 'N/A'}</div>
+                </div>
+            `;
+            document.getElementById('modelStats').innerHTML = statsHtml;
+        }
+
+        // ========================================
+        // Export
+        // ========================================
+        function showExportOptions() {
+            setStep(4);
+        }
+
+        async function exportAll() {
+            if (!AppState.modelData) {
+                showToast('error', 'No model data available');
+                return;
+            }
+
+            const formatCheckboxes = document.querySelectorAll('.format-option input:checked');
+            const formats = Array.from(formatCheckboxes).map(cb => cb.value);
+
+            if (formats.length === 0) {
+                showToast('warning', 'Please select at least one export format');
+                return;
+            }
+
+            try {
+                showLoading('Exporting models...');
+                const blob = await API.batchExport(AppState.modelData, formats);
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `model_export_${Date.now()}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                hideLoading();
+                showToast('success', `Exported ${formats.length} format(s) successfully!`);
+            } catch (error) {
+                hideLoading();
+                showToast('error', `Export failed: ${error.message}`);
+            }
+        }
+
+        async function exportSingle() {
+            if (!AppState.modelData) {
+                showToast('error', 'No model data available');
+                return;
+            }
+
+            const formatCheckboxes = document.querySelectorAll('.format-option input:checked');
+            const formats = Array.from(formatCheckboxes).map(cb => cb.value);
+
+            if (formats.length === 0) {
+                showToast('warning', 'Please select at least one export format');
+                return;
+            }
+
+            try {
+                showLoading('Exporting models...');
+
+                for (const format of formats) {
+                    const blob = await API.exportModel(AppState.modelData, format);
+
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `model_${Date.now()}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                hideLoading();
+                showToast('success', `Exported ${formats.length} file(s) successfully!`);
+            } catch (error) {
+                hideLoading();
+                showToast('error', `Export failed: ${error.message}`);
+            }
+        }
+
+        // ========================================
+        // 3D Viewer Controls
+        // ========================================
+        function resetCamera() {
+            if (AppState.viewer) AppState.viewer.resetCamera();
+        }
+
+        function toggleWireframe() {
+            if (AppState.viewer) AppState.viewer.toggleWireframe();
+        }
+
+        function toggleGrid() {
+            if (AppState.viewer) AppState.viewer.toggleGrid();
+        }
+
+        // ========================================
+        // Navigation
+        // ========================================
+        function setStep(step) {
+            AppState.currentStep = step;
+
+            document.querySelectorAll('.step').forEach((el, index) => {
+                if (index + 1 < step) {
+                    el.classList.add('completed');
+                    el.classList.remove('active');
+                } else if (index + 1 === step) {
+                    el.classList.add('active');
+                    el.classList.remove('completed');
+                } else {
+                    el.classList.remove('active', 'completed');
+                }
+            });
+
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            const sections = ['step-upload', 'step-parse', 'step-viewer', 'step-export'];
+            document.getElementById(sections[step - 1]).classList.remove('hidden');
+        }
+
+        // ========================================
+        // UI Helpers
+        // ========================================
+        function showLoading(message = 'Processing...') {
+            document.getElementById('loadingText').textContent = message;
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        function showToast(type, message, duration = 4000) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' :
+                                 type === 'error' ? 'times-circle' :
+                                 type === 'warning' ? 'exclamation-triangle' :
+                                 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+
+            document.getElementById('toastContainer').appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.4s reverse';
+                setTimeout(() => toast.remove(), 400);
+            }, duration);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showHelp() {
+            const helpText = `2D to 3D Model Converter - One-Stop Solution
+
+WORKFLOW:
+1. UPLOAD: Drag & drop or browse to upload your 2D drawing (DXF, DWG, PDF, PNG, JPEG)
+2. PARSE: System extracts geometric entities from your drawing
+3. GENERATE: Adjust parameters and generate 3D model
+4. EXPORT: Download in multiple formats for your target software
+
+SUPPORTED INPUT FORMATS:
+• DXF/DWG - AutoCAD drawings
+• PDF - Technical drawings with dimensions
+• PNG/JPEG - Scanned or raster drawings
+
+SUPPORTED OUTPUT FORMATS:
+• IFC - For Revit, Tekla, Navisworks (BIM)
+• STEP - For ANSYS, Abaqus, AVEVA (CAD/FEA)
+• IGES - Legacy CAD/FEA format
+• OBJ - Universal 3D format
+• STL - 3D printing & meshing
+
+SOFTWARE COMPATIBILITY:
+• Revit → IFC
+• Tekla → IFC, STEP
+• STAAD Pro → STEP
+• Navisworks → IFC
+• AVEVA → STEP
+• ANSYS → STEP, IGES
+• Abaqus → STEP, IGES
+
+CONVERSION PARAMETERS:
+• Extrusion Height: Height of 3D extrusion (Z-axis)
+• Thickness: Wall/beam thickness
+• Scale Factor: Global scaling multiplier
+
+TIPS:
+• Use high-resolution scans (300 DPI+) for images
+• DXF/DWG files provide most accurate results
+• PDF should contain vector graphics, not just scanned images
+• Adjust parameters to fine-tune your 3D model
+
+For more information, visit the documentation or contact support.`;
+
+            alert(helpText);
+        }
+
+        async function checkAPIHealth() {
+            try {
+                const health = await API.healthCheck();
+                console.log('✅ API Health:', health);
+            } catch (error) {
+                console.error('❌ API health check failed:', error);
+                showToast('warning', 'Backend API may be unavailable. Please ensure the server is running on port 5000.');
+            }
+        }
+    </script>
+</body>
+</html>
