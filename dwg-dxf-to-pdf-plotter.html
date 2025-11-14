@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DWG/DXF to PDF Plotter - Batch Converter</title>
 
-  <!-- External Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.3.1/dist/dxf-parser.min.js"></script>
+  <!-- External Libraries - Using verified CDN links -->
+  <script src="https://unpkg.com/dxf-parser@1.3.3/dist/dxf-parser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three-dxf@3.3.2/dist/three-dxf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
   <style>
     :root {
@@ -250,6 +249,7 @@
       font-size: 1.1rem;
       color: var(--dark);
       margin-bottom: 5px;
+      word-break: break-word;
     }
 
     .file-meta {
@@ -262,6 +262,7 @@
       align-items: center;
       gap: 10px;
       font-weight: 600;
+      min-width: 150px;
     }
 
     .status-pending { color: var(--text-light); }
@@ -287,6 +288,7 @@
     .file-actions {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
     }
 
     .action-btn {
@@ -297,6 +299,7 @@
       font-weight: 600;
       font-size: 0.9rem;
       transition: all 0.3s ease;
+      white-space: nowrap;
     }
 
     .preview-btn {
@@ -332,21 +335,6 @@
       justify-content: center;
       margin: 30px 0;
       flex-wrap: wrap;
-    }
-
-    .canvas-container {
-      display: none;
-      margin-top: 30px;
-      background: var(--darker);
-      border-radius: 15px;
-      padding: 20px;
-    }
-
-    #previewCanvas {
-      width: 100%;
-      max-width: 100%;
-      border-radius: 10px;
-      background: white;
     }
 
     .stats {
@@ -403,6 +391,12 @@
       border-left: 4px solid var(--secondary);
     }
 
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border-left: 4px solid var(--danger);
+    }
+
     .spinner {
       display: inline-block;
       width: 18px;
@@ -419,6 +413,16 @@
 
     .hidden {
       display: none;
+    }
+
+    .error-details {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 5px;
+      font-size: 0.85rem;
+      color: var(--danger);
+      font-family: monospace;
     }
 
     @media (max-width: 768px) {
@@ -447,6 +451,10 @@
         width: 100%;
         justify-content: center;
       }
+
+      .file-status {
+        justify-content: center;
+      }
     }
   </style>
 </head>
@@ -458,6 +466,12 @@
     </div>
 
     <div class="content">
+      <!-- Alert for library status -->
+      <div id="libraryAlert" class="alert alert-info" style="display: none;">
+        <span>ℹ️</span>
+        <span id="libraryAlertText">Loading libraries...</span>
+      </div>
+
       <!-- Statistics -->
       <div class="stats">
         <div class="stat-card">
@@ -481,13 +495,13 @@
       <!-- Upload Zone -->
       <div class="upload-zone" id="uploadZone">
         <div class="upload-icon">📁</div>
-        <h3>Drop DWG/DXF files here or click to browse</h3>
-        <p>Supports multiple file selection • .dwg and .dxf formats</p>
+        <h3>Drop DXF files here or click to browse</h3>
+        <p>Supports multiple file selection • .dxf format only</p>
         <button class="btn btn-primary">
           <span>📂</span>
           Select Files
         </button>
-        <input type="file" id="fileInput" accept=".dxf,.dwg" multiple style="display: none;">
+        <input type="file" id="fileInput" accept=".dxf" multiple style="display: none;">
       </div>
 
       <!-- Settings Panel -->
@@ -544,17 +558,6 @@
               <option value="monochrome">Monochrome</option>
             </select>
           </div>
-
-          <div class="form-group">
-            <label for="dpi">Resolution (DPI)</label>
-            <select id="dpi">
-              <option value="72">72 DPI (Screen)</option>
-              <option value="150">150 DPI (Draft)</option>
-              <option value="300" selected>300 DPI (Standard)</option>
-              <option value="600">600 DPI (High Quality)</option>
-              <option value="1200">1200 DPI (Print)</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -579,16 +582,34 @@
           Clear All
         </button>
       </div>
-
-      <!-- Preview Canvas -->
-      <div class="canvas-container" id="canvasContainer">
-        <h3 style="color: white; margin-bottom: 15px;">Preview</h3>
-        <canvas id="previewCanvas"></canvas>
-      </div>
     </div>
   </div>
 
   <script>
+    // Check if libraries are loaded
+    let librariesLoaded = false;
+
+    function checkLibraries() {
+      const alert = document.getElementById('libraryAlert');
+      const alertText = document.getElementById('libraryAlertText');
+
+      if (typeof DxfParser !== 'undefined' && typeof jspdf !== 'undefined') {
+        librariesLoaded = true;
+        alert.className = 'alert alert-success';
+        alertText.textContent = '✓ All libraries loaded successfully. Ready to convert files!';
+        setTimeout(() => alert.style.display = 'none', 3000);
+        console.log('✓ Libraries loaded successfully');
+      } else {
+        alert.style.display = 'flex';
+        alert.className = 'alert alert-error';
+        alertText.textContent = '⚠ Error loading libraries. Please refresh the page or check your internet connection.';
+        console.error('Libraries not loaded:', {
+          DxfParser: typeof DxfParser !== 'undefined',
+          jsPDF: typeof jspdf !== 'undefined'
+        });
+      }
+    }
+
     // File management
     let files = [];
     let processedPDFs = [];
@@ -602,8 +623,6 @@
     const convertAllBtn = document.getElementById('convertAllBtn');
     const downloadAllBtn = document.getElementById('downloadAllBtn');
     const clearAllBtn = document.getElementById('clearAllBtn');
-    const previewCanvas = document.getElementById('previewCanvas');
-    const canvasContainer = document.getElementById('canvasContainer');
 
     // Stats
     const totalFilesEl = document.getElementById('totalFiles');
@@ -617,7 +636,6 @@
     const scale = document.getElementById('scale');
     const lineWidth = document.getElementById('lineWidth');
     const colorMode = document.getElementById('colorMode');
-    const dpi = document.getElementById('dpi');
 
     // Page dimensions in mm
     const pageSizes = {
@@ -668,13 +686,18 @@
     }
 
     function addFiles(newFiles) {
+      if (!librariesLoaded) {
+        alert('Libraries are still loading. Please wait a moment and try again.');
+        return;
+      }
+
       const validFiles = newFiles.filter(file => {
         const ext = file.name.toLowerCase().split('.').pop();
-        return ext === 'dxf' || ext === 'dwg';
+        return ext === 'dxf';
       });
 
       if (validFiles.length === 0) {
-        alert('Please select valid DXF or DWG files.');
+        alert('Please select valid DXF files only. DWG format is not supported in browser.');
         return;
       }
 
@@ -684,7 +707,7 @@
           file: file,
           name: file.name,
           size: file.size,
-          type: file.name.toLowerCase().endsWith('.dxf') ? 'DXF' : 'DWG',
+          type: 'DXF',
           status: 'pending',
           progress: 0,
           pdfBlob: null,
@@ -694,6 +717,7 @@
       });
 
       updateUI();
+      fileInput.value = ''; // Reset input
     }
 
     function updateUI() {
@@ -714,14 +738,13 @@
 
         fileList.innerHTML = files.map(file => `
           <div class="file-item" data-id="${file.id}">
-            <div class="file-icon">
-              ${file.type === 'DXF' ? '📄' : '📐'}
-            </div>
+            <div class="file-icon">📄</div>
             <div class="file-info">
-              <div class="file-name">${file.name}</div>
+              <div class="file-name">${escapeHtml(file.name)}</div>
               <div class="file-meta">
                 ${formatFileSize(file.size)} • ${file.type} File
               </div>
+              ${file.error ? `<div class="error-details">${escapeHtml(file.error)}</div>` : ''}
             </div>
             <div class="file-status status-${file.status}">
               ${getStatusIcon(file.status)} ${file.status.toUpperCase()}
@@ -738,9 +761,9 @@
                   ⬇️ Download
                 </button>
               ` : ''}
-              ${file.status === 'pending' ? `
+              ${file.status === 'pending' || file.status === 'error' ? `
                 <button class="action-btn preview-btn" onclick="convertSingleFile('${file.id}')">
-                  🔄 Convert
+                  🔄 ${file.status === 'error' ? 'Retry' : 'Convert'}
                 </button>
               ` : ''}
               <button class="action-btn remove-btn" onclick="removeFile('${file.id}')">
@@ -760,6 +783,12 @@
       } else {
         downloadAllBtn.style.display = 'none';
       }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     function getStatusIcon(status) {
@@ -786,7 +815,7 @@
     }
 
     function clearAllFiles() {
-      if (confirm('Are you sure you want to clear all files?')) {
+      if (files.length === 0 || confirm('Are you sure you want to clear all files?')) {
         files = [];
         processedPDFs = [];
         updateUI();
@@ -794,7 +823,12 @@
     }
 
     async function convertAllFiles() {
-      const pendingFiles = files.filter(f => f.status === 'pending');
+      if (!librariesLoaded) {
+        alert('Libraries are not loaded yet. Please wait and try again.');
+        return;
+      }
+
+      const pendingFiles = files.filter(f => f.status === 'pending' || f.status === 'error');
 
       if (pendingFiles.length === 0) {
         alert('No pending files to convert.');
@@ -802,16 +836,26 @@
       }
 
       convertAllBtn.disabled = true;
+      convertAllBtn.innerHTML = '<div class="spinner"></div> Converting...';
 
       for (const file of pendingFiles) {
         await convertFile(file);
       }
 
       convertAllBtn.disabled = false;
-      alert(`Conversion complete!\nSuccess: ${files.filter(f => f.status === 'success').length}\nFailed: ${files.filter(f => f.status === 'error').length}`);
+      convertAllBtn.innerHTML = '<span>🔄</span> Convert All to PDF';
+
+      const success = files.filter(f => f.status === 'success').length;
+      const failed = files.filter(f => f.status === 'error').length;
+      alert(`Conversion complete!\n✓ Success: ${success}\n✗ Failed: ${failed}`);
     }
 
     window.convertSingleFile = async function(id) {
+      if (!librariesLoaded) {
+        alert('Libraries are not loaded yet. Please wait and try again.');
+        return;
+      }
+
       const file = files.find(f => f.id == id);
       if (file) {
         await convertFile(file);
@@ -821,25 +865,35 @@
     async function convertFile(fileObj) {
       fileObj.status = 'processing';
       fileObj.progress = 0;
+      fileObj.error = null;
       updateUI();
 
       try {
+        console.log(`Converting ${fileObj.name}...`);
+
         // Read file
         const fileContent = await readFileAsText(fileObj.file);
-
-        fileObj.progress = 30;
+        fileObj.progress = 20;
         updateUI();
 
-        // Parse DXF (only DXF is supported by dxf-parser in browser)
-        if (fileObj.type === 'DWG') {
-          throw new Error('DWG format requires server-side conversion. Please use DXF format or convert DWG to DXF first.');
+        // Parse DXF
+        const parser = new DxfParser();
+        let dxf;
+
+        try {
+          dxf = parser.parseSync(fileContent);
+        } catch (parseError) {
+          throw new Error(`DXF parsing failed: ${parseError.message}`);
         }
 
-        const parser = new window.DxfParser();
-        const dxf = parser.parseSync(fileContent);
+        if (!dxf || !dxf.entities || dxf.entities.length === 0) {
+          throw new Error('No entities found in DXF file');
+        }
 
-        fileObj.progress = 60;
+        fileObj.progress = 50;
         updateUI();
+
+        console.log(`Parsed ${dxf.entities.length} entities from ${fileObj.name}`);
 
         // Convert to PDF
         const pdfBlob = await dxfToPDF(dxf, fileObj.name);
@@ -847,9 +901,10 @@
         fileObj.progress = 100;
         fileObj.status = 'success';
         fileObj.pdfBlob = pdfBlob;
+        console.log(`✓ Successfully converted ${fileObj.name}`);
 
       } catch (error) {
-        console.error('Conversion error:', error);
+        console.error(`Conversion error for ${fileObj.name}:`, error);
         fileObj.status = 'error';
         fileObj.error = error.message;
       }
@@ -861,7 +916,7 @@
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(e);
+        reader.onerror = (e) => reject(new Error('Failed to read file'));
         reader.readAsText(file);
       });
     }
@@ -886,108 +941,152 @@
 
       // Calculate bounds
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let validEntities = 0;
 
       if (dxf.entities) {
         dxf.entities.forEach(entity => {
-          if (entity.type === 'LINE') {
-            minX = Math.min(minX, entity.vertices[0].x, entity.vertices[1].x);
-            minY = Math.min(minY, entity.vertices[0].y, entity.vertices[1].y);
-            maxX = Math.max(maxX, entity.vertices[0].x, entity.vertices[1].x);
-            maxY = Math.max(maxY, entity.vertices[0].y, entity.vertices[1].y);
-          } else if (entity.type === 'POLYLINE' || entity.type === 'LWPOLYLINE') {
-            entity.vertices.forEach(v => {
-              minX = Math.min(minX, v.x);
-              minY = Math.min(minY, v.y);
-              maxX = Math.max(maxX, v.x);
-              maxY = Math.max(maxY, v.y);
-            });
-          } else if (entity.type === 'CIRCLE') {
-            minX = Math.min(minX, entity.center.x - entity.radius);
-            minY = Math.min(minY, entity.center.y - entity.radius);
-            maxX = Math.max(maxX, entity.center.x + entity.radius);
-            maxY = Math.max(maxY, entity.center.y + entity.radius);
-          } else if (entity.type === 'ARC') {
-            minX = Math.min(minX, entity.center.x - entity.radius);
-            minY = Math.min(minY, entity.center.y - entity.radius);
-            maxX = Math.max(maxX, entity.center.x + entity.radius);
-            maxY = Math.max(maxY, entity.center.y + entity.radius);
+          try {
+            if (entity.type === 'LINE' && entity.vertices && entity.vertices.length >= 2) {
+              minX = Math.min(minX, entity.vertices[0].x, entity.vertices[1].x);
+              minY = Math.min(minY, entity.vertices[0].y, entity.vertices[1].y);
+              maxX = Math.max(maxX, entity.vertices[0].x, entity.vertices[1].x);
+              maxY = Math.max(maxY, entity.vertices[0].y, entity.vertices[1].y);
+              validEntities++;
+            } else if ((entity.type === 'POLYLINE' || entity.type === 'LWPOLYLINE') && entity.vertices) {
+              entity.vertices.forEach(v => {
+                if (v && typeof v.x === 'number' && typeof v.y === 'number') {
+                  minX = Math.min(minX, v.x);
+                  minY = Math.min(minY, v.y);
+                  maxX = Math.max(maxX, v.x);
+                  maxY = Math.max(maxY, v.y);
+                }
+              });
+              validEntities++;
+            } else if (entity.type === 'CIRCLE' && entity.center && typeof entity.radius === 'number') {
+              minX = Math.min(minX, entity.center.x - entity.radius);
+              minY = Math.min(minY, entity.center.y - entity.radius);
+              maxX = Math.max(maxX, entity.center.x + entity.radius);
+              maxY = Math.max(maxY, entity.center.y + entity.radius);
+              validEntities++;
+            } else if (entity.type === 'ARC' && entity.center && typeof entity.radius === 'number') {
+              minX = Math.min(minX, entity.center.x - entity.radius);
+              minY = Math.min(minY, entity.center.y - entity.radius);
+              maxX = Math.max(maxX, entity.center.x + entity.radius);
+              maxY = Math.max(maxY, entity.center.y + entity.radius);
+              validEntities++;
+            }
+          } catch (e) {
+            console.warn('Error processing entity:', entity.type, e);
           }
         });
       }
 
+      if (validEntities === 0) {
+        throw new Error('No valid drawable entities found in DXF file');
+      }
+
+      console.log(`Found ${validEntities} valid entities to draw`);
+
       const drawingWidth = maxX - minX;
       const drawingHeight = maxY - minY;
 
+      if (drawingWidth <= 0 || drawingHeight <= 0) {
+        throw new Error('Invalid drawing dimensions');
+      }
+
       // Calculate scale
       let scaleVal;
+      const margin = 10; // 10mm margin
       if (scale.value === 'auto') {
-        const scaleX = (pageWidth - 20) / drawingWidth;
-        const scaleY = (pageHeight - 20) / drawingHeight;
+        const scaleX = (pageWidth - 2 * margin) / drawingWidth;
+        const scaleY = (pageHeight - 2 * margin) / drawingHeight;
         scaleVal = Math.min(scaleX, scaleY);
       } else {
-        const ratio = parseFloat(scale.value.split(':')[1]) / parseFloat(scale.value.split(':')[0]);
-        scaleVal = ratio;
+        const parts = scale.value.split(':');
+        scaleVal = parseFloat(parts[0]) / parseFloat(parts[1]);
       }
 
       const offsetX = (pageWidth - drawingWidth * scaleVal) / 2 - minX * scaleVal;
       const offsetY = (pageHeight - drawingHeight * scaleVal) / 2 - minY * scaleVal;
 
       // Set line width
-      const lineW = parseFloat(lineWidth.value);
+      const lineW = parseFloat(lineWidth.value) || 0.5;
       pdf.setLineWidth(lineW);
+
+      let drawnEntities = 0;
 
       // Draw entities
       if (dxf.entities) {
         dxf.entities.forEach(entity => {
-          // Set color
-          let color = '#000000';
-          if (colorMode.value === 'color' && entity.color) {
-            color = getColorFromACI(entity.color);
-          } else if (colorMode.value === 'grayscale') {
-            color = '#666666';
-          }
-          pdf.setDrawColor(color);
-
-          if (entity.type === 'LINE') {
-            const x1 = entity.vertices[0].x * scaleVal + offsetX;
-            const y1 = pageHeight - (entity.vertices[0].y * scaleVal + offsetY);
-            const x2 = entity.vertices[1].x * scaleVal + offsetX;
-            const y2 = pageHeight - (entity.vertices[1].y * scaleVal + offsetY);
-            pdf.line(x1, y1, x2, y2);
-          } else if (entity.type === 'POLYLINE' || entity.type === 'LWPOLYLINE') {
-            for (let i = 0; i < entity.vertices.length - 1; i++) {
-              const x1 = entity.vertices[i].x * scaleVal + offsetX;
-              const y1 = pageHeight - (entity.vertices[i].y * scaleVal + offsetY);
-              const x2 = entity.vertices[i + 1].x * scaleVal + offsetX;
-              const y2 = pageHeight - (entity.vertices[i + 1].y * scaleVal + offsetY);
-              pdf.line(x1, y1, x2, y2);
+          try {
+            // Set color
+            let color = '#000000';
+            if (colorMode.value === 'color' && entity.color) {
+              color = getColorFromACI(entity.color);
+            } else if (colorMode.value === 'grayscale') {
+              color = '#666666';
             }
-          } else if (entity.type === 'CIRCLE') {
-            const cx = entity.center.x * scaleVal + offsetX;
-            const cy = pageHeight - (entity.center.y * scaleVal + offsetY);
-            const r = entity.radius * scaleVal;
-            pdf.circle(cx, cy, r);
-          } else if (entity.type === 'ARC') {
-            const cx = entity.center.x * scaleVal + offsetX;
-            const cy = pageHeight - (entity.center.y * scaleVal + offsetY);
-            const r = entity.radius * scaleVal;
-            const startAngle = entity.startAngle * 180 / Math.PI;
-            const endAngle = entity.endAngle * 180 / Math.PI;
+            pdf.setDrawColor(color);
 
-            // Draw arc as series of lines
-            const segments = 32;
-            const angleStep = (endAngle - startAngle) / segments;
-            for (let i = 0; i < segments; i++) {
-              const a1 = (startAngle + i * angleStep) * Math.PI / 180;
-              const a2 = (startAngle + (i + 1) * angleStep) * Math.PI / 180;
-              const x1 = cx + r * Math.cos(a1);
-              const y1 = cy - r * Math.sin(a1);
-              const x2 = cx + r * Math.cos(a2);
-              const y2 = cy - r * Math.sin(a2);
+            if (entity.type === 'LINE' && entity.vertices && entity.vertices.length >= 2) {
+              const x1 = entity.vertices[0].x * scaleVal + offsetX;
+              const y1 = pageHeight - (entity.vertices[0].y * scaleVal + offsetY);
+              const x2 = entity.vertices[1].x * scaleVal + offsetX;
+              const y2 = pageHeight - (entity.vertices[1].y * scaleVal + offsetY);
               pdf.line(x1, y1, x2, y2);
+              drawnEntities++;
+            } else if ((entity.type === 'POLYLINE' || entity.type === 'LWPOLYLINE') && entity.vertices) {
+              for (let i = 0; i < entity.vertices.length - 1; i++) {
+                const v1 = entity.vertices[i];
+                const v2 = entity.vertices[i + 1];
+                if (v1 && v2 && typeof v1.x === 'number' && typeof v1.y === 'number') {
+                  const x1 = v1.x * scaleVal + offsetX;
+                  const y1 = pageHeight - (v1.y * scaleVal + offsetY);
+                  const x2 = v2.x * scaleVal + offsetX;
+                  const y2 = pageHeight - (v2.y * scaleVal + offsetY);
+                  pdf.line(x1, y1, x2, y2);
+                }
+              }
+              drawnEntities++;
+            } else if (entity.type === 'CIRCLE' && entity.center && typeof entity.radius === 'number') {
+              const cx = entity.center.x * scaleVal + offsetX;
+              const cy = pageHeight - (entity.center.y * scaleVal + offsetY);
+              const r = entity.radius * scaleVal;
+              pdf.circle(cx, cy, r);
+              drawnEntities++;
+            } else if (entity.type === 'ARC' && entity.center && typeof entity.radius === 'number') {
+              const cx = entity.center.x * scaleVal + offsetX;
+              const cy = pageHeight - (entity.center.y * scaleVal + offsetY);
+              const r = entity.radius * scaleVal;
+              const startAngle = entity.startAngle || 0;
+              const endAngle = entity.endAngle || Math.PI * 2;
+
+              // Draw arc as series of lines
+              const segments = 32;
+              const angleRange = endAngle - startAngle;
+              const angleStep = angleRange / segments;
+
+              for (let i = 0; i < segments; i++) {
+                const a1 = startAngle + i * angleStep;
+                const a2 = startAngle + (i + 1) * angleStep;
+                const x1 = cx + r * Math.cos(a1);
+                const y1 = cy - r * Math.sin(a1);
+                const x2 = cx + r * Math.cos(a2);
+                const y2 = cy - r * Math.sin(a2);
+                pdf.line(x1, y1, x2, y2);
+              }
+              drawnEntities++;
             }
+          } catch (e) {
+            console.warn('Error drawing entity:', entity.type, e);
           }
         });
+      }
+
+      console.log(`Drew ${drawnEntities} entities to PDF`);
+
+      if (drawnEntities === 0) {
+        throw new Error('No entities were successfully drawn to PDF');
       }
 
       // Add metadata
@@ -1005,7 +1104,7 @@
       // AutoCAD Color Index to RGB (simplified)
       const colors = {
         1: '#FF0000', 2: '#FFFF00', 3: '#00FF00', 4: '#00FFFF', 5: '#0000FF',
-        6: '#FF00FF', 7: '#000000', 8: '#808080', 9: '#C0C0C0'
+        6: '#FF00FF', 7: '#FFFFFF', 8: '#414141', 9: '#808080', 0: '#000000'
       };
       return colors[aciColor] || '#000000';
     }
@@ -1016,8 +1115,10 @@
         const url = URL.createObjectURL(file.pdfBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = file.name.replace(/\.(dxf|dwg)$/i, '.pdf');
+        a.download = file.name.replace(/\.dxf$/i, '.pdf');
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
     }
@@ -1030,14 +1131,21 @@
         return;
       }
 
-      successFiles.forEach(file => {
-        setTimeout(() => downloadPDF(file.id), 100);
+      successFiles.forEach((file, index) => {
+        setTimeout(() => downloadPDF(file.id), index * 200);
       });
     }
 
-    // Initialize
+    // Initialize - check libraries after page load
+    window.addEventListener('load', () => {
+      setTimeout(checkLibraries, 500);
+    });
+
+    // Also check immediately
+    setTimeout(checkLibraries, 100);
+
     console.log('DWG/DXF to PDF Plotter initialized');
-    console.log('Note: DWG format requires conversion to DXF first. Use DXF files for best results.');
+    console.log('Supported format: DXF only (DWG requires conversion to DXF first)');
   </script>
 </body>
 </html>
