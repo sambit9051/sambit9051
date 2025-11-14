@@ -1,0 +1,40 @@
+# Core Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+Werkzeug==3.0.1
+
+# CAD File Parsing
+ezdxf==1.1.3              # DWG/DXF parsing
+Pillow==10.1.0            # Image processing
+opencv-python==4.8.1.78   # Advanced image processing
+PyPDF2==3.0.1             # PDF parsing
+pdfplumber==0.10.3        # PDF text/dimension extraction
+
+# 3D Geometry & Modeling
+numpy==1.26.2
+scipy==1.11.4
+shapely==2.0.2            # 2D geometry operations
+trimesh==4.0.8            # 3D mesh operations
+
+# CAD Export Formats
+ifcopenshell==0.7.0       # IFC export for Revit/Tekla/Navisworks
+# pythonocc-core==7.7.2   # STEP/IGES (requires conda/specific build)
+# Note: For STEP/IGES we'll use alternative approaches or manual installation
+
+# Alternative for STEP/IGES (lightweight)
+python-step-parser==0.1.0
+
+# OCR for images (optional but useful)
+pytesseract==0.3.10       # Text recognition in drawings
+
+# Utilities
+python-magic==0.4.27      # File type detection
+python-dotenv==1.0.0      # Environment variables
+requests==2.31.0
+gunicorn==21.2.0          # Production server
+
+# Progress tracking
+tqdm==4.66.1
+
+# JSON/Data handling
+jsonschema==4.20.0

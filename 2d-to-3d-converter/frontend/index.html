@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D to 3D Model Converter - One-Stop Solution</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-cube"></i>
+                    <h1>2D to 3D Converter</h1>
+                    <span class="badge">One-Stop Solution</span>
+                </div>
+                <nav class="nav">
+                    <button class="btn btn-secondary" onclick="showHelp()">
+                        <i class="fas fa-question-circle"></i> Help
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Progress Steps -->
+            <div class="progress-steps">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Upload Drawing</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Parse & Extract</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Generate 3D</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Export</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Upload -->
+            <section class="section" id="step-upload">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-upload"></i> Upload 2D Drawing</h2>
+                        <p>Supported formats: DXF, DWG, PDF, PNG, JPEG</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Drag & Drop Zone -->
+                        <div class="upload-zone" id="uploadZone">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Drag & Drop your file here</h3>
+                            <p>or click to browse</p>
+                            <input type="file" id="fileInput" accept=".dxf,.dwg,.pdf,.png,.jpg,.jpeg" hidden>
+                            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open"></i> Browse Files
+                            </button>
+                        </div>
+
+                        <!-- File Info -->
+                        <div class="file-info hidden" id="fileInfo">
+                            <div class="file-preview">
+                                <i class="fas fa-file-alt file-icon"></i>
+                                <div class="file-details">
+                                    <h4 id="fileName">-</h4>
+                                    <p><span id="fileSize">-</span> • <span id="fileType">-</span></p>
+                                </div>
+                                <button class="btn-icon" onclick="removeFile()" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-primary btn-block" onclick="parseFile()">
+                                <i class="fas fa-cogs"></i> Parse Drawing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Parse Results -->
+            <section class="section hidden" id="step-parse">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-search"></i> Parsing Results</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid" id="parseStats">
+                            <!-- Dynamic stats -->
+                        </div>
+
+                        <!-- Parsed Entities -->
+                        <div class="entities-section">
+                            <h3>Detected Entities</h3>
+                            <div class="entities-list" id="entitiesList">
+                                <!-- Dynamic entity list -->
+                            </div>
+                        </div>
+
+                        <!-- Conversion Parameters -->
+                        <div class="params-section">
+                            <h3>Conversion Parameters</h3>
+                            <div class="params-grid">
+                                <div class="param-group">
+                                    <label for="extrusionHeight">
+                                        <i class="fas fa-arrows-alt-v"></i> Extrusion Height
+                                    </label>
+                                    <input type="number" id="extrusionHeight" value="100" min="1" step="10">
+                                    <span class="unit">mm</span>
+                                </div>
+                                <div class="param-group">
+                                    <label for="thickness">
+                                        <i class="fas fa-layer-group"></i> Thickness
+                                    </label>
+                                    <input type="number" id="thickness" value="10" min="0.1" step="1">
+                                    <span class="unit">mm</span>
+                                </div>
+                                <div class="param-group">
+                                    <label for="scale">
+                                        <i class="fas fa-expand-arrows-alt"></i> Scale Factor
+                                    </label>
+                                    <input type="number" id="scale" value="1.0" min="0.1" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-block" onclick="convertTo3D()">
+                            <i class="fas fa-cube"></i> Generate 3D Model
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 3: 3D Viewer -->
+            <section class="section hidden" id="step-viewer">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-eye"></i> 3D Model Preview</h2>
+                    </div>
+                    <div class="card-body">
+                        <!-- 3D Viewer -->
+                        <div class="viewer-container">
+                            <canvas id="viewer3D"></canvas>
+                            <div class="viewer-controls">
+                                <button class="btn-icon" onclick="resetCamera()" title="Reset View">
+                                    <i class="fas fa-home"></i>
+                                </button>
+                                <button class="btn-icon" onclick="toggleWireframe()" title="Toggle Wireframe">
+                                    <i class="fas fa-project-diagram"></i>
+                                </button>
+                                <button class="btn-icon" onclick="toggleGrid()" title="Toggle Grid">
+                                    <i class="fas fa-th"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Model Stats -->
+                        <div class="stats-grid" id="modelStats">
+                            <!-- Dynamic stats -->
+                        </div>
+
+                        <button class="btn btn-primary btn-block" onclick="showExportOptions()">
+                            <i class="fas fa-download"></i> Export Model
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 4: Export Options -->
+            <section class="section hidden" id="step-export">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-file-export"></i> Export 3D Model</h2>
+                        <p>Choose format(s) compatible with your target software</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Software Compatibility Guide -->
+                        <div class="software-guide">
+                            <h3>Software Compatibility</h3>
+                            <div class="software-grid">
+                                <div class="software-item">
+                                    <div class="software-icon revit"></div>
+                                    <h4>Revit</h4>
+                                    <span class="format-badge">IFC</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon tekla"></div>
+                                    <h4>Tekla</h4>
+                                    <span class="format-badge">IFC</span>
+                                    <span class="format-badge">STEP</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon staad"></div>
+                                    <h4>STAAD Pro</h4>
+                                    <span class="format-badge">STEP</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon navis"></div>
+                                    <h4>Navisworks</h4>
+                                    <span class="format-badge">IFC</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon aveva"></div>
+                                    <h4>AVEVA</h4>
+                                    <span class="format-badge">STEP</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon ansys"></div>
+                                    <h4>ANSYS</h4>
+                                    <span class="format-badge">STEP</span>
+                                    <span class="format-badge">IGES</span>
+                                </div>
+                                <div class="software-item">
+                                    <div class="software-icon abaqus"></div>
+                                    <h4>Abaqus</h4>
+                                    <span class="format-badge">STEP</span>
+                                    <span class="format-badge">IGES</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Export Format Selection -->
+                        <div class="export-formats">
+                            <h3>Select Export Format(s)</h3>
+                            <div class="format-grid">
+                                <label class="format-option">
+                                    <input type="checkbox" value="ifc" checked>
+                                    <div class="format-card">
+                                        <i class="fas fa-building"></i>
+                                        <h4>IFC</h4>
+                                        <p>BIM standard for Revit, Tekla, Navisworks</p>
+                                    </div>
+                                </label>
+                                <label class="format-option">
+                                    <input type="checkbox" value="step" checked>
+                                    <div class="format-card">
+                                        <i class="fas fa-cog"></i>
+                                        <h4>STEP</h4>
+                                        <p>CAD standard for ANSYS, Abaqus, AVEVA</p>
+                                    </div>
+                                </label>
+                                <label class="format-option">
+                                    <input type="checkbox" value="iges">
+                                    <div class="format-card">
+                                        <i class="fas fa-project-diagram"></i>
+                                        <h4>IGES</h4>
+                                        <p>Legacy CAD/FEA format</p>
+                                    </div>
+                                </label>
+                                <label class="format-option">
+                                    <input type="checkbox" value="obj">
+                                    <div class="format-card">
+                                        <i class="fas fa-cube"></i>
+                                        <h4>OBJ</h4>
+                                        <p>Universal 3D format</p>
+                                    </div>
+                                </label>
+                                <label class="format-option">
+                                    <input type="checkbox" value="stl">
+                                    <div class="format-card">
+                                        <i class="fas fa-print"></i>
+                                        <h4>STL</h4>
+                                        <p>3D printing & meshing</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Export Buttons -->
+                        <div class="export-actions">
+                            <button class="btn btn-primary btn-large" onclick="exportAll()">
+                                <i class="fas fa-download"></i> Download All Selected Formats
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportSingle()">
+                                <i class="fas fa-file-download"></i> Download Individual Files
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p id="loadingText">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/viewer.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
